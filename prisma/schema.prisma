@@ -24,6 +24,8 @@ model cliente {
   id         Int      @id @default(autoincrement())
   nombre     String   @db.VarChar(255)
   created_at DateTime @default(now()) @db.Timestamp(0)
+  telefono   String?  @db.VarChar(20)
+  email      String?  @db.VarChar(255)
 }
 
 model mesa {
@@ -100,6 +102,17 @@ model producto {
   @@index([disponibilidad], map: "idx_producto_disponibilidad")
 }
 
+model usuario {
+  id         Int         @id @default(autoincrement())
+  nombre     String      @db.VarChar(255)
+  email      String      @unique(map: "email") @db.VarChar(255)
+  password   String      @db.VarChar(255)
+  rol        usuario_rol
+  activo     Boolean?    @default(true)
+  created_at DateTime    @default(now()) @db.Timestamp(0)
+  updated_at DateTime    @default(now()) @db.Timestamp(0)
+}
+
 enum mesa_estado {
   Disponible
   Ocupada
@@ -115,4 +128,10 @@ enum pedido_estado {
   Pendiente
   En_preparaci_n @map("En preparación")
   Entregado
+}
+
+enum usuario_rol {
+  encargado
+  cocina
+  admin
 }
