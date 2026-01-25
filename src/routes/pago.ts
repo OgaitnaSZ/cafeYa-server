@@ -4,9 +4,9 @@ import * as pago from "../controllers/pago";
 import * as validator from "../validators/pago";
 
 // Crear pago
-router.post("/pago", validator.validatorPago, pago.crearPago);
+router.post("/crear", validator.validatorPago, pago.crearPago);
 
 // Obtener pago
-router.get("/pago/:id", validator.validatorId, pago.obtenerPago);
+router.get("/:id", validator.validatorId, pago.obtenerPago);
 
 export { router };

@@ -9,10 +9,10 @@ export const validatorCalificacion = [
     .isUUID(),
 
   check("puntuacion")
-    .exists().withMessage("Puntuacion es requerida")
-    .notEmpty().withMessage("Puntuacion no puede estar vacía")
-    .isInt(),
-
+    .exists().withMessage("La cantidad es obligatoria")
+    .notEmpty().withMessage("La cantidad no puede estar vacía")
+    .isInt({ min: 1, max: 5 }).withMessage("El valor debe estar entre 1 y 5"),
+    
   check("resena")
     .exists().withMessage("La reseña es requerida")
     .notEmpty().withMessage("La reseña no puede estar vacía")

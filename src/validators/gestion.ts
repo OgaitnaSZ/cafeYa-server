@@ -1,6 +1,7 @@
 import { check, param } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { validateResults } from "../utils/handleValidator";
+import { mesa_estado, pedido_estado } from "@prisma/client";
 
 export const validatorEstadoMesa = [
   check("idMesa")
@@ -10,7 +11,8 @@ export const validatorEstadoMesa = [
 
   check("estado")
     .exists().withMessage("El estado es requerido")
-    .notEmpty().withMessage("El estado no puede estar vacío"),
+    .notEmpty().withMessage("El estado no puede estar vacío")
+    .isIn(Object.values(mesa_estado)),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
@@ -36,7 +38,8 @@ export const validatorEstadoPedido = [
 
   check("estado")
     .exists().withMessage("El estado es requerido")
-    .notEmpty().withMessage("El estado no puede estar vacío"),
+    .notEmpty().withMessage("El estado no puede estar vacío")
+    .isIn(Object.values(pedido_estado)),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
