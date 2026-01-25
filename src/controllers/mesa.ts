@@ -2,29 +2,27 @@ import { Request, Response } from "express";
 import { PrismaClient } from "../generated/prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
+import { mesa_estado } from "@prisma/client";
 const prisma = new PrismaClient()
-
-// Obtener Mesa
-export async function obtenerMesa(req: Request, res: Response) {
-  
-}
-
-// Obtener Mesas
-export async function obtenerMesas(req: Request, res: Response) {
-  
-}
-
-// Actualizar Estado
-export async function actualizarEstadoMesa(req: Request, res: Response) {
-  
-}
-
-// Regenerar codigo dinamico
-export async function regenerarCodigoDinamico(req: Request, res: Response) {
-  
-}
 
 // Validar codigo mesa
 export async function validarCodigoDinamico(req: Request, res: Response) {
-  
+    try {
+        const dataMesa = matchedData(req);
+    
+        const existingMesa = await prisma.mesa.findUnique({
+            where: { numero: dataMesa.numero }
+        });
+          
+        if(!existingMesa) return handleHttpError(res, "MESA NO EXISTE", 404)
+
+        if(existingMesa.codigo_dinamico !== dataMesa.codigo) return handleHttpError(res, "CODIGO INCORRECTO", 404)
+
+        if(existingMesa.estado === mesa_estado.Ocupada) return handleHttpError(res, "MESA OCUPADA", 404)
+
+        return res.status(200).json({ ok: true });
+    } catch (err) {
+      handleHttpError(res, "No se pudo actualizar el cliente", 500)
+      return;
+    }
 }
