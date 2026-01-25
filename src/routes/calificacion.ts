@@ -5,7 +5,7 @@ import * as validator from "../validators/calificacion";
 import { authMiddleware } from "../middleware/session";
 
 // Crear calificacion
-router.post("/calificacion", authMiddleware, validator.validatorCrearCliente, calificacion.crearCalificacion);
+router.post("/calificacion", authMiddleware, validator.validatorCalificacion, calificacion.crearCalificacion);
 
 // Obtener calificacion
 router.get("/calificacion/:id", authMiddleware, validator.validatorId, calificacion.obtenerCalificacion);

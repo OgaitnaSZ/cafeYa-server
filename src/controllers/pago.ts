@@ -13,13 +13,3 @@ export async function crearPago(req: Request, res: Response) {
 export async function obtenerPago(req: Request, res: Response) {
   
 }
-
-// Obtener Pagos Pedido
-export async function obtenerPagosPedido(req: Request, res: Response) {
-  
-}
-
-// Confirmar Pago
-export async function ConfirmarPago(req: Request, res: Response) {
-  
-}

@@ -2,26 +2,32 @@ import { check, param } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { validateResults } from "../utils/handleValidator";
 
-export const validatorCalificacion = [
+export const validatorPago = [
   check("idPedido")
     .exists().withMessage("Id de pedido es requerido")
     .notEmpty().withMessage("Id de pedido no puede estar vacío")
     .isUUID(),
 
-  check("puntuacion")
-    .exists().withMessage("Puntuacion es requerida")
-    .notEmpty().withMessage("Puntuacion no puede estar vacía")
-    .isInt(),
+  check("medioDePago")
+    .exists().withMessage("Medio de pago es requerido")
+    .notEmpty().withMessage("Medio de pago no puede estar vacío")
+    .isEmail().withMessage("Medio de pago no es válido")
+    .isLength({ max: 30 }).withMessage("Medio de pago debe tener como máximo 30 caracteres"),
 
-  check("resena")
-    .exists().withMessage("La reseña es requerida")
-    .notEmpty().withMessage("La reseña no puede estar vacía")
-    .isLength({ max: 100 }).withMessage("El email debe tener como máximo 100 caracteres"),
-
-  check("nombre")
+  check("monto")
     .exists().withMessage("El telefono es requerido")
     .notEmpty().withMessage("El telefono no puede estar vacío")
-    .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
+    .isFloat(),
+
+  check("iva")
+    .exists().withMessage("El telefono es requerido")
+    .notEmpty().withMessage("El telefono no puede estar vacío")
+    .isFloat(),
+
+  check("montoFinal")
+    .exists().withMessage("El telefono es requerido")
+    .notEmpty().withMessage("El telefono no puede estar vacío")
+    .isFloat(),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
