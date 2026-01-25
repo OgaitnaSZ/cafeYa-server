@@ -4,7 +4,7 @@ import * as gestion from "../controllers/gestion";
 import * as validator from "../validators/gestion";
 import { authMiddleware } from "../middleware/session";
 import { checkRol } from "../middleware/rol";
-import { usuario_rol } from "../generated/prisma/enums";
+import { usuario_rol } from "@prisma/client";
 
 router.use(authMiddleware); // Middleware para todas las rutas
 

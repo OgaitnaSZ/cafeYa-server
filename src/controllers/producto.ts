@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()
@@ -10,7 +10,7 @@ export async function obtenerProducto(req: Request, res: Response) {
         const data = matchedData(req);
     
         const existingProduct = await prisma.producto.findUnique({
-            where: { id: data.id }
+            where: { producto_id: data.id }
         });
           
         if(!existingProduct) return handleHttpError(res, "PRODUCTO NO EXISTE", 404)

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()
@@ -30,7 +30,7 @@ export async function obtenerCliente(req: Request, res: Response) {
         const idCliente = Number(req.params.id);
     
         const existingClient = await prisma.cliente.findUnique({
-          where: { id: idCliente },
+          where: { cliente_id: idCliente },
           select: {
             nombre: true,
             email: true,
@@ -56,14 +56,14 @@ export async function modificarCliente(req: Request, res: Response) {
     const dataClient = matchedData(req);
 
     const updatedClient = await prisma.cliente.update({
-      where: { id: dataClient.id },
+      where: { cliente_id: dataClient.id },
       data: { 
         nombre: dataClient.nombre,
         email: dataClient.email,
         telefono: dataClient.telefono
       },
       select: {
-        id: true,
+        cliente_id: true,
         nombre: true,
         email: true,
         telefono: true

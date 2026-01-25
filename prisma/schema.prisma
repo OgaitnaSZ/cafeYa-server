@@ -8,90 +8,94 @@ datasource db {
 }
 
 model calificacion {
-  id                 String   @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  pedido_id          String   @db.Char(36)
-  puntuacion         Int
-  resena             String?  @db.Text
-  fecha              DateTime @default(now()) @db.Timestamp(0)
-  nombre_del_cliente String   @db.VarChar(255)
-  pedido             pedido   @relation(fields: [pedido_id], references: [id], onUpdate: Restrict, map: "calificacion_ibfk_1")
+  id             String   @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  pedido_id      String   @db.Char(36)
+  puntuacion     Int
+  resena         String?  @db.Text
+  created_at     DateTime @default(now()) @db.Timestamp(0)
+  nombre_cliente String   @db.VarChar(255)
+  pedido         pedido   @relation(fields: [pedido_id], references: [pedido_id], onUpdate: Restrict, map: "calificacion_ibfk_1")
 
   @@index([pedido_id], map: "idx_calificacion_pedido")
 }
 
 model cliente {
-  id         Int      @id @default(autoincrement())
+  cliente_id Int      @id @default(autoincrement())
   nombre     String   @db.VarChar(255)
   created_at DateTime @default(now()) @db.Timestamp(0)
   telefono   String?  @db.VarChar(20)
   email      String?  @db.VarChar(255)
+  pedido     pedido[]
 }
 
 model mesa {
-  numero                   Int         @id
-  estado                   mesa_estado @default(Disponible)
-  codigo_qr                String      @unique(map: "codigo_qr") @db.VarChar(255)
-  codigo_dinamico          String      @db.VarChar(255)
-  created_at               DateTime    @default(now()) @db.Timestamp(0)
-  updated_at               DateTime    @default(now()) @db.Timestamp(0)
-  pedido_pedido_mesaTomesa pedido[]    @relation("pedido_mesaTomesa")
+  mesa_id         Int         @id
+  estado          mesa_estado @default(Disponible)
+  codigo_qr       String      @unique(map: "codigo_qr") @db.VarChar(255)
+  codigo_dinamico String      @db.VarChar(255)
+  created_at      DateTime    @default(now()) @db.Timestamp(0)
+  updated_at      DateTime    @default(now()) @db.Timestamp(0)
+  pedido          pedido[]
 }
 
 model pago {
-  id            String             @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  pago_id       String             @id @default(dbgenerated("(uuid())")) @db.Char(36)
   pedido_id     String             @db.Char(36)
   medio_de_pago pago_medio_de_pago
   monto         Decimal            @db.Decimal(10, 2)
   IVA           Decimal            @db.Decimal(10, 2)
   monto_final   Decimal            @db.Decimal(10, 2)
-  fecha         DateTime           @default(now()) @db.Timestamp(0)
-  pedido        pedido             @relation(fields: [pedido_id], references: [id], onUpdate: Restrict, map: "pago_ibfk_1")
+  created_at    DateTime           @default(now()) @db.Timestamp(0)
+  pedido        pedido             @relation(fields: [pedido_id], references: [pedido_id], onUpdate: Restrict, map: "pago_ibfk_1")
 
   @@index([pedido_id], map: "idx_pago_pedido")
 }
 
 model pedido {
-  id                     String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  cliente                String            @db.VarChar(255)
-  mesa                   Int
-  nota                   String?           @db.Text
-  precio_total           Decimal           @db.Decimal(10, 2)
-  estado                 pedido_estado     @default(Pendiente)
-  fecha                  DateTime          @default(now()) @db.Timestamp(0)
-  pedido_padre           String?           @db.Char(36)
-  calificacion           calificacion[]
-  pago                   pago[]
-  mesa_pedido_mesaTomesa mesa              @relation("pedido_mesaTomesa", fields: [mesa], references: [numero], onUpdate: Restrict, map: "pedido_ibfk_1")
-  pedido                 pedido?           @relation("pedidoTopedido", fields: [pedido_padre], references: [id], onUpdate: Restrict, map: "pedido_ibfk_2")
-  other_pedido           pedido[]          @relation("pedidoTopedido")
-  pedido_producto        pedido_producto[]
+  pedido_id       String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  cliente_id      Int
+  nombre_cliente  String            @db.VarChar(255)
+  mesa_id         Int
+  nota            String?           @db.Text
+  precio_total    Decimal           @db.Decimal(10, 2)
+  estado          pedido_estado     @default(Pendiente)
+  created_at      DateTime          @default(now()) @db.Timestamp(0)
+  pedido_padre    String?           @db.Char(36)
+  calificacion    calificacion[]
+  pago            pago[]
+  cliente         cliente           @relation(fields: [cliente_id], references: [cliente_id], onUpdate: Restrict, map: "fk_pedido_cliente")
+  mesa            mesa              @relation(fields: [mesa_id], references: [mesa_id], onUpdate: Restrict, map: "pedido_ibfk_1")
+  pedido          pedido?           @relation("pedidoTopedido", fields: [pedido_padre], references: [pedido_id], onUpdate: Restrict, map: "pedido_ibfk_2")
+  other_pedido    pedido[]          @relation("pedidoTopedido")
+  pedido_producto pedido_producto[]
 
   @@index([estado], map: "idx_pedido_estado")
-  @@index([fecha], map: "idx_pedido_fecha")
-  @@index([mesa], map: "idx_pedido_mesa")
+  @@index([created_at], map: "idx_pedido_fecha")
+  @@index([mesa_id], map: "idx_pedido_mesa")
   @@index([pedido_padre], map: "idx_pedido_padre")
+  @@index([cliente_id], map: "fk_pedido_cliente")
 }
 
 model pedido_producto {
-  id              Int      @id @default(autoincrement())
-  pedido_id       String   @db.Char(36)
-  producto_id     String   @db.Char(36)
-  cantidad        Int      @default(1)
-  precio_unitario Decimal  @db.Decimal(10, 2)
-  pedido          pedido   @relation(fields: [pedido_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pedido_producto_ibfk_1")
-  producto        producto @relation(fields: [producto_id], references: [id], onUpdate: Restrict, map: "pedido_producto_ibfk_2")
+  pedido_producto_id Int      @id @default(autoincrement())
+  pedido_id          String   @db.Char(36)
+  producto_id        String   @db.Char(36)
+  cantidad           Int      @default(1)
+  precio_unitario    Decimal  @db.Decimal(10, 2)
+  pedido             pedido   @relation(fields: [pedido_id], references: [pedido_id], onDelete: Cascade, onUpdate: Restrict, map: "pedido_producto_ibfk_1")
+  producto           producto @relation(fields: [producto_id], references: [producto_id], onUpdate: Restrict, map: "pedido_producto_ibfk_2")
 
   @@index([pedido_id], map: "pedido_id")
   @@index([producto_id], map: "producto_id")
 }
 
 model producto {
-  id              String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  producto_id     String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
   nombre          String            @db.VarChar(255)
   descripcion     String            @db.Text
   imagen_url      String?           @db.VarChar(500)
   categoria       String            @db.VarChar(100)
-  precio          Decimal           @db.Decimal(10, 2)
+  precio_unitario Decimal           @db.Decimal(10, 2)
   disponibilidad  Boolean           @default(true)
   created_at      DateTime          @default(now()) @db.Timestamp(0)
   updated_at      DateTime          @default(now()) @db.Timestamp(0)
@@ -123,14 +127,14 @@ enum pago_medio_de_pago {
   efectivo
 }
 
-enum pedido_estado {
-  Pendiente
-  En_preparaci_n @map("En preparación")
-  Entregado
-}
-
 enum usuario_rol {
   encargado
   cocina
   admin
+}
+
+enum pedido_estado {
+  Pendiente
+  En_preparacion @map("En preparacion")
+  Entregado
 }

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { handleHttpError } from "../utils/handleError";
-import { usuario_rol } from "../generated/prisma/enums";
+import { usuario_rol } from "@prisma/client";
 
 export const checkRol = (allowedRoles: usuario_rol[]) => {
   return (req: Request, res: Response, next: NextFunction) => {

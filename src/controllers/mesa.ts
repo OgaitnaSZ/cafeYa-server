@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { mesa_estado } from "@prisma/client";
@@ -11,7 +11,7 @@ export async function validarCodigoDinamico(req: Request, res: Response) {
         const dataMesa = matchedData(req);
     
         const existingMesa = await prisma.mesa.findUnique({
-            where: { numero: dataMesa.numero }
+            where: { mesa_id: dataMesa.numero }
         });
           
         if(!existingMesa) return handleHttpError(res, "MESA NO EXISTE", 404)
