@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/handlerJwt";
 import { handleHttpError } from "../utils/handleError";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
 
 const prisma = new PrismaClient()
 
@@ -20,7 +20,7 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
 
         const user = await prisma.usuario.findUnique({
             where:{
-                idUsuario: dataToken.idUsuario
+                id: dataToken.idUsuario
             }
         })
 
