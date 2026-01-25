@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { validateResults } from "../utils/handleValidator";
 
 export const validatorCalificacion = [
-  check("idPedido")
+  check("pedido_id")
     .exists().withMessage("Id de pedido es requerido")
     .notEmpty().withMessage("Id de pedido no puede estar vacío")
     .isUUID(),
@@ -18,9 +18,9 @@ export const validatorCalificacion = [
     .notEmpty().withMessage("La reseña no puede estar vacía")
     .isLength({ max: 100 }).withMessage("El email debe tener como máximo 100 caracteres"),
 
-  check("nombre")
-    .exists().withMessage("El telefono es requerido")
-    .notEmpty().withMessage("El telefono no puede estar vacío")
+  check("nombre_cliente")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
     .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)

@@ -4,7 +4,7 @@ import * as calificacion from "../controllers/calificacion";
 import * as validator from "../validators/calificacion";
 
 // Crear calificacion
-router.post("/calificacion", validator.validatorCalificacion, calificacion.crearCalificacion);
+router.post("/crear", validator.validatorCalificacion, calificacion.crearCalificacion);
 
 // Obtener calificacion
 router.get("/calificacion/:id", validator.validatorId, calificacion.obtenerCalificacion);
