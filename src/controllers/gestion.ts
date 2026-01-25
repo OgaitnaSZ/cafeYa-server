@@ -5,6 +5,11 @@ import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()
 
 // Mesas
+// Obtener mesas
+export async function obtenerMesas(req: Request, res: Response) {
+  
+}
+
 // Actualizar estado
 export async function actualizarEstadoMesa(req: Request, res: Response) {
   
@@ -12,11 +17,6 @@ export async function actualizarEstadoMesa(req: Request, res: Response) {
 
 // Actualizar codigo
 export async function actualizarCodigoMesa(req: Request, res: Response) {
-  
-}
-
-// Cerrar Sesion
-export async function cerrarSesionMesa(req: Request, res: Response) {
   
 }
 
