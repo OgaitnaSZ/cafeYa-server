@@ -3,42 +3,58 @@ const router = express.Router();
 import * as gestion from "../controllers/gestion";
 import * as validator from "../validators/gestion";
 import { authMiddleware } from "../middleware/session";
+import { checkRol } from "../middleware/rol";
+import { usuario_rol } from "../generated/prisma/enums";
+
+router.use(authMiddleware); // Middleware para todas las rutas
+
+// Helpers de roles
+const adminOnly = checkRol([usuario_rol.admin]);
+const encargadoOrAdmin = checkRol([
+  usuario_rol.admin,
+  usuario_rol.encargado
+]);
+const cocinaOrAdmin = checkRol([
+  usuario_rol.admin,
+  usuario_rol.cocina
+]);
+
 
 /* --- ENCARGADO --- */
 // Obtener Mesas
-router.get("/mesas", authMiddleware, gestion.obtenerMesas);
+router.get("/mesas", encargadoOrAdmin, gestion.obtenerMesas);
 
 // Actualizar estado mesas
-router.patch("/mesas/estado", validator.validatorEstadoMesa, authMiddleware, gestion.actualizarEstadoMesa);
+router.patch("/mesas/estado", encargadoOrAdmin, validator.validatorEstadoMesa, gestion.actualizarEstadoMesa);
 
 // Actualizar codigo mesa
-router.patch("/mesas/codigo", validator.validatorCodigoMesa, authMiddleware, gestion.actualizarCodigoMesa);
+router.patch("/mesas/codigo", encargadoOrAdmin, validator.validatorCodigoMesa, gestion.actualizarCodigoMesa);
 
 // Actualizar Estado Pedido
-router.patch("/pedido/estado", validator.validatorEstadoPedido, authMiddleware, gestion.actualizarEstadoPedido);
+router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
 
 /* --- COCINA --- */
 // Obtener Pedidos Activos
-router.get("/pedidos/activos", authMiddleware, gestion.obtenerPedidosActivos);
+router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 
 /* --- ADMIN --- */
 //Obtener Pedidos Por Mesa
-router.get("/mesa/:id/pedidos", validator.validatorId, authMiddleware, gestion.obtenerPedidosPorMesa);
+router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
 
 // Crear productos
-router.post("/pedido/productos", validator.validatorCrearProducto, authMiddleware, gestion.crearProducto);
+router.post("/pedido/productos", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
 
 // Actualizar producto
-router.post("/pedido/productos", validator.validatorActualizarProducto, authMiddleware, gestion.actualiarProducto);
+router.post("/pedido/productos", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
 
 // Obtener producto
-router.get("/producto/:id", validator.validatorId, authMiddleware, gestion.obtenerProducto);
+router.get("/producto/:id", adminOnly, validator.validatorId, gestion.obtenerProducto);
 
 // Obtener productos
-router.get("/productos", authMiddleware, gestion.obtenerProductos);
+router.get("/productos", adminOnly, gestion.obtenerProductos);
 
 // Obtener calificaciones
-router.get("/calificaciones", authMiddleware, gestion.obtenerCalificaciones);
+router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);
 
 
 export { router };
