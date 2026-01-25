@@ -1,13 +1,13 @@
 import express from "express";
 const router = express.Router();
-import * as pedido from "../controllers/pedido";
+import * as producto from "../controllers/producto";
 import * as validator from "../validators/producto";
 import { authMiddleware } from "../middleware/session";
 
-// Crear pedido
-router.get("/producto/:id", authMiddleware, validator.validatorId, pedido.crearPedido);
+// Obtener producto
+router.get("/productos", authMiddleware, validator.validatorProductos, producto.obtenerProductos);
 
 // Agregar productos
-router.get("/productos", authMiddleware, validator.validatorProductos, pedido.agregarProductos);
+router.get("/producto/:id", authMiddleware, validator.validatorId, producto.obtenerProducto);
 
 export { router };
