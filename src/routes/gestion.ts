@@ -5,6 +5,7 @@ import * as validator from "../validators/gestion";
 import { authMiddleware } from "../middleware/session";
 import { checkRol } from "../middleware/rol";
 import { usuario_rol } from "@prisma/client";
+import { uploadMiddleware } from "../utils/handleStorage";
 
 router.use(authMiddleware); // Middleware para todas las rutas
 
@@ -42,10 +43,13 @@ router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
 
 // Crear productos
-router.post("/pedido/productos", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
+router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
 
 // Actualizar producto
-router.post("/pedido/productos", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
+router.put("/producto", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
+
+// Subir foto producto
+router.post("/producto/foto", uploadMiddleware, validator.validatorId, gestion.subirFoto);
 
 // Obtener producto
 router.get("/producto/:id", adminOnly, validator.validatorId, gestion.obtenerProducto);

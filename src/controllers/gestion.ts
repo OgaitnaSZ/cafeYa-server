@@ -4,6 +4,8 @@ import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()
 
+const PUBLIC_URL = process.env.PUBLIC_URL;
+
 // Mesas
 // Obtener mesas
 export async function obtenerMesas(req: Request, res: Response) {
@@ -207,5 +209,38 @@ export async function obtenerCalificaciones(req: Request, res: Response) {
         return res.status(200).json(calificaciones);
     } catch (err) {
         return handleHttpError(res, "Error al obtener calificaciones", 500)
+    }
+}
+
+// Fotos
+// Subir fotos
+export async function subirFoto(req: Request, res: Response) {
+    try {
+        const { body, file } = req;
+
+        const productoId = String(body.producto_id);
+        
+        if (!file) return handleHttpError(res, "No se recibieron fotos", 400);
+
+        const existingProduct = await prisma.producto.findUnique({
+          where: { producto_id: productoId }
+        });
+        
+        if (!existingProduct) return handleHttpError(res, "Producto no encontrado", 404)
+        
+        // Guardar en la db
+        const data = await prisma.producto.update({
+          where: { producto_id: productoId },
+          data: {
+            imagen_url: `${PUBLIC_URL}/uploads/${file.filename}`
+          }
+        });
+        
+        return res.status(201).send({ 
+          mensaje: `Foto subida con exito`, 
+          data
+        });
+    } catch (error) {
+      return handleHttpError(res, "Error al subir foto", 500);
     }
 }
