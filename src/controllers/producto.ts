@@ -17,8 +17,7 @@ export async function obtenerProducto(req: Request, res: Response) {
 
         return res.status(200).json(existingProduct);
     } catch (err) {
-      handleHttpError(res, "No se pudo actualizar el cliente", 500)
-      return;
+      return handleHttpError(res, "Error al obtener producto", 500)
     }
 }
 
@@ -46,9 +45,7 @@ export async function obtenerProductos(req: Request, res: Response) {
             }
         });
 
-        if (existingProducts.length === 0) {
-            return handleHttpError(res, "No hay productos coincidentes", 404);
-        }
+        if (existingProducts.length === 0) return handleHttpError(res, "No hay productos coincidentes", 404)
 
         return res.status(200).json(existingProducts);
     } catch (err) {

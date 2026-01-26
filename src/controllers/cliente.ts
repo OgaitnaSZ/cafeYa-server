@@ -17,10 +17,9 @@ export async function crearCliente(req: Request, res: Response) {
       },
     });
 
-    res.status(201).json({" message": "Suscripto correctamente.", "email": newClient });
+    res.status(201).json({"message": "Suscripto correctamente.", "email": newClient });
   }catch(error){
-    handleHttpError(res, "No se pudo suscribir", 500);
-    return;
+    return handleHttpError(res, "Error al suscribir", 500);
   }
 }
 
@@ -38,15 +37,11 @@ export async function obtenerCliente(req: Request, res: Response) {
           },
         });
     
-        if(!existingClient){
-            handleHttpError(res, "CLIENTE NO EXISTE", 404)
-            return
-        }
+        if(!existingClient) return handleHttpError(res, "Cliente no existe", 404)
     
         res.status(200).json(existingClient);
     } catch(error){
-        handleHttpError(res, "Error al obtener datos del cliente", 500);
-        return;
+      return handleHttpError(res, "Error al obtener datos del cliente", 500);
     }
 }
 
@@ -70,14 +65,10 @@ export async function modificarCliente(req: Request, res: Response) {
       }
     });
 
-    if(!updatedClient){
-      handleHttpError(res, "ID de cliente incorrecto", 404)
-      return
-    }
+    if(!updatedClient) return handleHttpError(res, "ID de cliente incorrecto", 404)
 
     res.status(200).json(updatedClient);
   } catch (err) {
-    handleHttpError(res, "No se pudo actualizar el cliente", 500)
-    return;
+    return handleHttpError(res, "Error al actualizar el cliente", 500)
   }
 }

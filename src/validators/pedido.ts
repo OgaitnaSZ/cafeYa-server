@@ -23,7 +23,7 @@ export const validatorNuevoPedido = [
     .exists().withMessage("Nota es requerido")
     .notEmpty().withMessage("Nota no puede estar vacío"),
 
-  check("idPedidoPadre")
+  check("pedido_padre_id")
     .optional()
     .isUUID(),
 

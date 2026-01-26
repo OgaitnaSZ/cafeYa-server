@@ -20,8 +20,7 @@ export async function crearCalificacion(req: Request, res: Response) {
   
       res.status(201).json(newReview );
     }catch(error){
-      handleHttpError(res, "No se pudo suscribir", 500);
-      return;
+      return handleHttpError(res, "Error al crear calificacion", 500);
     }
 }
 
@@ -38,7 +37,7 @@ export async function obtenerCalificacion(req: Request, res: Response) {
     
         res.status(200).json(existingCalificacion);
     } catch(error){
-        return handleHttpError(res, "Error al obtener datos calificacion", 500);
+        return handleHttpError(res, "Error al obtener calificacion", 500);
     }
 }
 

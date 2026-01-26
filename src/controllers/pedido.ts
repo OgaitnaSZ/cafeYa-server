@@ -36,7 +36,7 @@ export async function crearPedido(req: Request, res: Response) {
           nota: dataPedido.nota,
           precio_total: precioTotal,
           estado: pedido_estado.Pendiente,
-          ...(dataPedido.idPedidoPadre && { pedido_padre: dataPedido.idPedidoPadre })
+          ...(dataPedido.pedido_padre_id && { pedido_padre: dataPedido.pedido_padre_id })
         }
       });
 
@@ -61,7 +61,6 @@ export async function crearPedido(req: Request, res: Response) {
 
     res.status(201).json(result);
   } catch (error) {
-    console.error(error);
     return handleHttpError(res, "Error al crear pedido", 500);
   }
 }

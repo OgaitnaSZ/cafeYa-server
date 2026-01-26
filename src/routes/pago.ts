@@ -7,6 +7,6 @@ import * as validator from "../validators/pago";
 router.post("/crear", validator.validatorPago, pago.crearPago);
 
 // Obtener pago
-router.get("/:id", validator.validatorId, pago.obtenerPago);
+router.get("/pago/:id", validator.validatorId, pago.obtenerPago);
 
 export { router };

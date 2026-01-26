@@ -21,7 +21,7 @@ export const validatorCrearCliente = [
 ];
 
 export const validatorModificarCliente = [
-  check("id")
+  check("cliente_id")
     .isInt({ gt: 0 })
     .withMessage("El ID debe ser un número entero positivo"),
 

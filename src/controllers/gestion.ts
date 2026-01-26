@@ -16,7 +16,7 @@ export async function obtenerMesas(req: Request, res: Response) {
 
         return res.status(200).json(existingMesas);
     } catch (err) {
-        return handleHttpError(res, "No hay mesas", 500)
+        return handleHttpError(res, "Error al obtener mesas", 500)
     }
 }
 
@@ -32,14 +32,11 @@ export async function actualizarEstadoMesa(req: Request, res: Response) {
       }
     });
 
-    if(!updatedMesa){
-      handleHttpError(res, "ID de mesa incorrecto", 404)
-      return
-    }
+    if(!updatedMesa) return handleHttpError(res, "ID de mesa incorrecto", 404)
 
     res.status(200).json(updatedMesa);
   } catch (err) {
-    return handleHttpError(res, "No se pudo actualizar el estado de la mesa", 500)
+    return handleHttpError(res, "Error al actualizar el estado de la mesa", 500)
   }
 }
 
@@ -55,14 +52,11 @@ export async function actualizarCodigoMesa(req: Request, res: Response) {
       }
     });
 
-    if(!updatedMesa){
-      handleHttpError(res, "ID de mesa incorrecto", 404)
-      return
-    }
+    if(!updatedMesa) return handleHttpError(res, "ID de mesa incorrecto", 404)
 
     res.status(200).json(updatedMesa);
   } catch (err) {
-    return handleHttpError(res, "No se pudo actualizar el codigo de la mesa", 500)
+    return handleHttpError(res, "Error al actualizar el codigo de la mesa", 500)
   }
 }
 
@@ -79,14 +73,11 @@ export async function actualizarEstadoPedido(req: Request, res: Response) {
       }
     });
 
-    if(!updatedPedido){
-      handleHttpError(res, "ID de pedido incorrecto", 404)
-      return
-    }
+    if(!updatedPedido) return handleHttpError(res, "ID de pedido incorrecto", 404)
 
     res.status(200).json(updatedPedido);
   } catch (err) {
-    return handleHttpError(res, "No se pudo actualizar el estado del pedido", 500)
+    return handleHttpError(res, "Error al actualizar el estado del pedido", 500)
   }
 }
 
@@ -112,7 +103,6 @@ export async function obtenerPedidosPorMesa(req: Request, res: Response) {
 // Obtener Pedidos activos
 export async function obtenerPedidosActivos(req: Request, res: Response) {
     try {
-
         const existingPedido = await prisma.pedido.findMany({
             where:{
                 estado: {
@@ -125,7 +115,7 @@ export async function obtenerPedidosActivos(req: Request, res: Response) {
 
         return res.status(200).json(existingPedido);
     } catch (err) {
-        return handleHttpError(res, "No hay pedidos activos", 500)
+        return handleHttpError(res, "Error al obtener pedidos activos", 500)
     }
 }
 
@@ -168,7 +158,7 @@ export async function actualiarProducto(req: Request, res: Response) {
       }
     });
 
-    if(!updatedProducto){return handleHttpError(res, "ID de producto incorrecto", 404)}
+    if(!updatedProducto) return handleHttpError(res, "ID de producto incorrecto", 404)
 
     res.status(200).json(updatedProducto);
   } catch (err) {

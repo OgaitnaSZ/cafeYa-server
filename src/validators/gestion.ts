@@ -4,7 +4,7 @@ import { validateResults } from "../utils/handleValidator";
 import { mesa_estado, pedido_estado } from "@prisma/client";
 
 export const validatorEstadoMesa = [
-  check("idMesa")
+  check("mesa_id")
     .exists().withMessage("Id de mesa es requerido")
     .notEmpty().withMessage("Id de mesa no puede estar vacío")
     .isUUID(),
@@ -18,7 +18,7 @@ export const validatorEstadoMesa = [
 ];
 
 export const validatorCodigoMesa = [
-  check("idMesa")
+  check("mesa_id")
     .exists().withMessage("Id de mesa es requerido")
     .notEmpty().withMessage("Id de mesa no puede estar vacío")
     .isUUID(),
@@ -74,7 +74,7 @@ export const validatorCrearProducto = [
 ];
 
 export const validatorActualizarProducto = [
-check("idProducto")
+check("producto_id")
     .exists().withMessage("Id de producto es requerido")
     .notEmpty().withMessage("Id de producto no puede estar vacío")
     .isUUID(),

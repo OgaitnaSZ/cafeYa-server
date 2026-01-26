@@ -31,6 +31,6 @@ export async function login(req: Request, res: Response) {
         
     res.status(200).send({data});
   } catch (error) {
-    return handleHttpError(res, "ERROR_LOGIN_USER", 500)
+    return handleHttpError(res, "Error al iniciar session", 500)
   }
 }

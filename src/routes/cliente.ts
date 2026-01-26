@@ -7,7 +7,7 @@ import * as validator from "../validators/cliente";
 router.post("/crear", validator.validatorCrearCliente, cliente.crearCliente);
 
 // Obtener cliente
-router.get("/:id", validator.validatorId,cliente.obtenerCliente);
+router.get("/cliente/:id", validator.validatorId,cliente.obtenerCliente);
 
 // Modificar cliente
 router.put("/modificar", validator.validatorModificarCliente, cliente.modificarCliente);

@@ -7,16 +7,12 @@ const prisma = new PrismaClient()
 
 export const authMiddleware = async (req:Request, res:Response, next:NextFunction) => {
     try{
-        if(!req.headers.authorization){
-            return handleHttpError(res, "NOT TOKEN", 401);
-        }
+        if(!req.headers.authorization) return handleHttpError(res, "NOT TOKEN", 401);
         
         const token = req.headers.authorization.split(' ').pop();
         const dataToken = await verifyToken(String(token));
 
-        if(!dataToken){
-            return handleHttpError(res, "NOT PAYLOAD DATA", 401);
-        }
+        if(!dataToken) return handleHttpError(res, "NOT PAYLOAD DATA", 401);
 
         const user = await prisma.usuario.findUnique({
             where:{
@@ -29,7 +25,6 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
         req.user = user
 
         return next()
-
     }catch(error){
         return handleHttpError(res, "NOT SESSION", 401)
     }

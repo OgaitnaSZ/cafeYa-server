@@ -7,19 +7,15 @@ export const checkRol = (allowedRoles: usuario_rol[]) => {
     try {
       const user = req.user;
 
-      if (!user || !user.rol) {
-        return handleHttpError(res, "USER_NOT_FOUND_OR_INVALID", 401);
-      }
+      if (!user || !user.rol) return handleHttpError(res, "USER_NOT_FOUND_OR_INVALID", 401);
 
       const userRole: usuario_rol = user.rol;
 
-      if (!allowedRoles.includes(userRole)) {
-        return handleHttpError(res, "USER_NOT_PERMISSIONS", 403);
-      }
+      if (!allowedRoles.includes(userRole)) return handleHttpError(res, "USER_NOT_PERMISSIONS", 403);
 
       next();
     } catch (e) {
-      handleHttpError(res, "ERROR_PERMISSIONS", 403);
+      return handleHttpError(res, "ERROR_PERMISSIONS", 403);
     }
   };
 };

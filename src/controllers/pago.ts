@@ -15,9 +15,7 @@ export async function crearPago(req: Request, res: Response) {
                 select: { estado: true }
             });
 
-            if (!pedido) {
-                return handleHttpError(res, "Pedido no encontrado", 404)
-            }
+            if (!pedido) return handleHttpError(res, "Pedido no encontrado", 404)
 
             // 2. Obtener productos del pedido con precio y cantidad
             const pedidoProductos = await tx.pedido_producto.findMany({
@@ -28,9 +26,7 @@ export async function crearPago(req: Request, res: Response) {
                 }
             });
 
-            if (pedidoProductos.length === 0) {
-                return handleHttpError(res, "El pedido no tiene productos", 404)
-            }
+            if (pedidoProductos.length === 0) return handleHttpError(res, "El pedido no tiene productos", 404)
 
             // 3. Calcular el monto total
             const monto = pedidoProductos.reduce((total, item) => {
@@ -77,10 +73,10 @@ export async function obtenerPago(req: Request, res: Response) {
             where: { pago_id: idPago }
         });
     
-        if(!existingPago){ return handleHttpError(res, "Pago no existe", 404) }
+        if(!existingPago) return handleHttpError(res, "Pago no existe", 404)
     
         res.status(200).json(existingPago);
     } catch(error){
-        return handleHttpError(res, "Error al obtener datos del cliente", 500);
+        return handleHttpError(res, "Error al obtener datos del pago", 500);
     }
 }
