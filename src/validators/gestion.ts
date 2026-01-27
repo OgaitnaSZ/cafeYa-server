@@ -7,7 +7,7 @@ export const validatorEstadoMesa = [
   check("mesa_id")
     .exists().withMessage("Id de mesa es requerido")
     .notEmpty().withMessage("Id de mesa no puede estar vacío")
-    .isUUID(),
+    .isInt(),
 
   check("estado")
     .exists().withMessage("El estado es requerido")
@@ -21,9 +21,9 @@ export const validatorCodigoMesa = [
   check("mesa_id")
     .exists().withMessage("Id de mesa es requerido")
     .notEmpty().withMessage("Id de mesa no puede estar vacío")
-    .isUUID(),
+    .isInt(),
 
-  check("codigo")
+  check("codigo_dinamico")
     .exists().withMessage("El codigo es requerido")
     .notEmpty().withMessage("El codigo no puede estar vacío"),
 
@@ -31,7 +31,7 @@ export const validatorCodigoMesa = [
 ];
 
 export const validatorEstadoPedido = [
-  check("idPedido")
+  check("pedido_id")
     .exists().withMessage("Id de pedido es requerido")
     .notEmpty().withMessage("Id de pedido no puede estar vacío")
     .isUUID(),
@@ -55,17 +55,12 @@ export const validatorCrearProducto = [
     .notEmpty().withMessage("La descripcion no puede estar vacía")
     .isLength({ max: 100 }).withMessage("La descripcion debe tener como máximo 100 caracteres"),
 
-  check("imagen_url")
-    .exists().withMessage("La url es requerida")
-    .notEmpty().withMessage("La url no puede estar vacía")
-    .isLength({ max: 100 }).withMessage("La url debe tener como máximo 100 caracteres"),
-
   check("categoria")
     .exists().withMessage("La categoria es requerida")
     .notEmpty().withMessage("La categoria no puede estar vacía")
     .isLength({ max: 30 }).withMessage("La categoria debe tener como máximo 30 caracteres"),
 
-  check("precio")
+  check("precio_unitario")
     .exists().withMessage("El precio es requerido")
     .notEmpty().withMessage("El precio no puede estar vacío")
     .isFloat(),
@@ -90,8 +85,7 @@ check("producto_id")
     .isLength({ max: 100 }).withMessage("La descripcion debe tener como máximo 100 caracteres"),
 
   check("imagen_url")
-    .exists().withMessage("La url es requerida")
-    .notEmpty().withMessage("La url no puede estar vacía")
+    .optional()
     .isLength({ max: 100 }).withMessage("La url debe tener como máximo 100 caracteres"),
 
   check("categoria")
@@ -99,7 +93,7 @@ check("producto_id")
     .notEmpty().withMessage("La categoria no puede estar vacía")
     .isLength({ max: 30 }).withMessage("La categoria debe tener como máximo 30 caracteres"),
 
-  check("precio")
+  check("precio_unitario")
     .exists().withMessage("El precio es requerido")
     .notEmpty().withMessage("El precio no puede estar vacío")
     .isFloat(),
@@ -110,6 +104,22 @@ check("producto_id")
 export const validatorId = [
     param("id")
     .isUUID().withMessage('El ID debe ser un UUID válido.'),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
+export const validatorIdFoto = [
+  check("producto_id")
+    .exists().withMessage("El ID del producto es requerido")
+    .notEmpty().withMessage("El ID del producto no puede estar vacío")
+    .isUUID().withMessage('El ID del producto debe ser un UUID válido.'),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
+export const validatorIdInt = [
+    param("id")
+    .isInt(),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];

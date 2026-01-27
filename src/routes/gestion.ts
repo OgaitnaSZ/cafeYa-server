@@ -38,9 +38,9 @@ router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualiz
 // Obtener Pedidos Activos
 router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 
-/* --- ADMIN --- */
+/* --- SOLO ADMIN --- */
 //Obtener Pedidos Por Mesa
-router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
+router.get("/mesa/:id/pedidos", adminOnly, validator.validatorIdInt, gestion.obtenerPedidosPorMesa);
 
 // Crear productos
 router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
@@ -49,13 +49,13 @@ router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gest
 router.put("/producto", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
 
 // Subir foto producto
-router.post("/producto/foto", uploadMiddleware, validator.validatorId, gestion.subirFoto);
-
-// Obtener producto
-router.get("/producto/:id", adminOnly, validator.validatorId, gestion.obtenerProducto);
+router.post("/producto/foto", uploadMiddleware, validator.validatorIdFoto, gestion.subirFoto);
 
 // Obtener productos
 router.get("/productos", adminOnly, gestion.obtenerProductos);
+
+// Obtener producto
+router.get("/producto/:id", adminOnly, validator.validatorId, gestion.obtenerProducto);
 
 // Obtener calificaciones
 router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);

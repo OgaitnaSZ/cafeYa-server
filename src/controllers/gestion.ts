@@ -88,15 +88,15 @@ export async function obtenerPedidosPorMesa(req: Request, res: Response) {
     try {
         const data = matchedData(req);
     
-        const existingPedido = await prisma.pedido.findMany({
+        const existingPedidos = await prisma.pedido.findMany({
             where:{
-                mesa_id: data.id
+              mesa_id: Number(data.id)
             }
         });
         
-        if(!existingPedido) return handleHttpError(res, "No hay pedidos en esta mesa", 404)
+        if(existingPedidos.length === 0) return handleHttpError(res, "No hay pedidos en esta mesa", 404)
 
-        return res.status(200).json(existingPedido);
+        return res.status(200).json(existingPedidos);
     } catch (err) {
         return handleHttpError(res, "No hay pedidos para esta mesa", 500)
     }

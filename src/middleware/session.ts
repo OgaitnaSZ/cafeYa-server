@@ -11,12 +11,12 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
         
         const token = req.headers.authorization.split(' ').pop();
         const dataToken = await verifyToken(String(token));
-
+        
         if(!dataToken) return handleHttpError(res, "NOT PAYLOAD DATA", 401);
-
+        
         const user = await prisma.usuario.findUnique({
             where:{
-                id: dataToken.idUsuario
+                id: dataToken.id
             }
         })
 
@@ -24,8 +24,9 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
         
         req.user = user
 
+
         return next()
     }catch(error){
-        return handleHttpError(res, "NOT SESSION", 401)
+        handleHttpError(res, "NOT SESSION", 401)
     }
 }
