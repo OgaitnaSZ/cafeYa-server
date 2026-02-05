@@ -22,8 +22,9 @@ export const validatorCrearCliente = [
 
 export const validatorModificarCliente = [
   check("cliente_id")
-    .isInt({ gt: 0 })
-    .withMessage("El ID debe ser un número entero positivo"),
+    .exists().withMessage("El ID del producto es requerido")
+    .notEmpty().withMessage("El ID del producto no puede estar vacío")
+    .isUUID().withMessage('El ID del producto debe ser un UUID válido.'),
 
   check("nombre")
     .exists().withMessage("El nombre es requerido")
@@ -45,7 +46,8 @@ export const validatorModificarCliente = [
 ];
 
 export const validatorId = [
-  param("id")
-    .isInt({ gt: 0 })
-    .withMessage("El ID debe ser un número entero positivo"),
+    param("id")
+    .isUUID().withMessage('El ID debe ser un UUID válido.'),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];

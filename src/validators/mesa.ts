@@ -4,6 +4,7 @@ import { validateResults } from "../utils/handleValidator";
 
 export const validatorCodigoDinamico = [
   check("mesa_id")
+    .isUUID().withMessage('El ID debe ser un UUID válido.')
     .exists().withMessage("El id es requerido")
     .notEmpty().withMessage("El id no puede estar vacío"),
 

@@ -20,7 +20,7 @@ model calificacion {
 }
 
 model cliente {
-  cliente_id Int      @id @default(autoincrement())
+  cliente_id String   @id @default(dbgenerated("(uuid())")) @db.Char(36)
   nombre     String   @db.VarChar(255)
   created_at DateTime @default(now()) @db.Timestamp(0)
   telefono   String?  @db.VarChar(20)
@@ -29,14 +29,13 @@ model cliente {
 }
 
 model mesa {
-  mesa_id         String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  estado          mesa_estado @default(Disponible)
-  codigo_qr       String      @unique(map: "codigo_qr") @db.VarChar(255)
-  codigo_dinamico String      @db.VarChar(255)
-  created_at      DateTime    @default(now()) @db.Timestamp(0)
-  updated_at      DateTime    @default(now()) @db.Timestamp(0)
-  numero          Int         @unique(map: "uq_mesa_numero")
-  pedido          pedido[]
+  mesa_id    String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  numero     Int         @unique(map: "uq_mesa_numero")
+  codigo     String      @db.Char(4)
+  estado     mesa_estado @default(Disponible)
+  created_at DateTime    @default(now()) @db.Timestamp(0)
+  updated_at DateTime    @default(now()) @db.Timestamp(0)
+  pedido     pedido[]
 }
 
 model pago {
@@ -54,7 +53,7 @@ model pago {
 
 model pedido {
   pedido_id       String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  cliente_id      Int
+  cliente_id      String            @db.Char(36)
   nombre_cliente  String            @db.VarChar(255)
   mesa_id         String            @db.Char(36)
   nota            String?           @db.Text
@@ -64,7 +63,7 @@ model pedido {
   pedido_padre    String?           @db.Char(36)
   calificacion    calificacion[]
   pago            pago[]
-  cliente         cliente           @relation(fields: [cliente_id], references: [cliente_id], onUpdate: Restrict, map: "fk_pedido_cliente")
+  cliente         cliente           @relation(fields: [cliente_id], references: [cliente_id], map: "fk_pedido_cliente")
   mesa            mesa              @relation(fields: [mesa_id], references: [mesa_id], map: "pedido_ibfk_1")
   pedido          pedido?           @relation("pedidoTopedido", fields: [pedido_padre], references: [pedido_id], onUpdate: Restrict, map: "pedido_ibfk_2")
   other_pedido    pedido[]          @relation("pedidoTopedido")

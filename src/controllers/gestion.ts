@@ -50,7 +50,7 @@ export async function actualizarCodigoMesa(req: Request, res: Response) {
     const updatedMesa = await prisma.mesa.update({
       where: { mesa_id: dataMesa.mesa_id },
       data: { 
-        codigo_dinamico: dataMesa.codigo_dinamico
+        codigo: dataMesa.codigo
       }
     });
 
@@ -90,7 +90,7 @@ export async function obtenerPedidosPorMesa(req: Request, res: Response) {
     
         const existingPedidos = await prisma.pedido.findMany({
             where:{
-              mesa_id: Number(data.id)
+              mesa_id: data.id
             }
         });
         

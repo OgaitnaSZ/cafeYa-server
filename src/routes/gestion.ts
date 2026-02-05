@@ -40,7 +40,7 @@ router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 
 /* --- SOLO ADMIN --- */
 //Obtener Pedidos Por Mesa
-router.get("/mesa/:id/pedidos", adminOnly, validator.validatorIdInt, gestion.obtenerPedidosPorMesa);
+router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
 
 // Crear productos
 router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);

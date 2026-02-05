@@ -4,8 +4,7 @@ import { validateResults } from "../utils/handleValidator";
 
 export const validatorNuevoPedido = [
   check("cliente_id")
-    .isInt({ gt: 0 })
-    .withMessage("El ID debe ser un número entero positivo"),
+    .isUUID().withMessage('El ID del cliente debe ser un UUID válido.'),
   
   check("cliente_nombre")
     .exists().withMessage("El nombre es requerido")

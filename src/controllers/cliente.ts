@@ -26,7 +26,7 @@ export async function crearCliente(req: Request, res: Response) {
 // Obtener Cliente
 export async function obtenerCliente(req: Request, res: Response) {
     try {
-        const idCliente = Number(req.params.id);
+        const idCliente = String(req.params.id);
     
         const existingClient = await prisma.cliente.findUnique({
           where: { cliente_id: idCliente },

@@ -5,9 +5,7 @@ import { pago_medio_de_pago } from "@prisma/client";
 
 export const validatorPago = [
   check("pedido_id")
-    .exists().withMessage("Id de pedido es requerido")
-    .notEmpty().withMessage("Id de pedido no puede estar vacío")
-    .isUUID(),
+    .isUUID().withMessage('El ID debe ser un UUID válido.'),
 
   check("medio_pago")
     .exists().withMessage("Medio de pago es requerido")
