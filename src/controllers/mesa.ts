@@ -9,8 +9,6 @@ const prisma = new PrismaClient()
 export async function ValidarMesa(req: Request, res: Response) {
     try {
         const dataMesa = matchedData(req);
-
-        console.log("Data Mesa:", dataMesa);
     
         const existingMesa = await prisma.mesa.findUnique({
             where: { mesa_id: dataMesa.id }
@@ -18,7 +16,12 @@ export async function ValidarMesa(req: Request, res: Response) {
           
         if(!existingMesa) return handleHttpError(res, "MESA NO EXISTE", 404)
 
-        return res.status(200).json(existingMesa);
+        const mesaSinCodigo = {
+          mesa_id: existingMesa.mesa_id,
+          numero: existingMesa.numero
+        };
+
+        return res.status(200).json(mesaSinCodigo);
     } catch (err) {
       return handleHttpError(res, "Error al validar id de la mesa", 500)
     }
@@ -35,9 +38,9 @@ export async function validarCodigoDinamico(req: Request, res: Response) {
           
         if(!existingMesa) return handleHttpError(res, "MESA NO EXISTE", 404)
 
-        if(existingMesa.codigo !== dataMesa.codigo) return handleHttpError(res, "CODIGO INCORRECTO", 404)
+        if(existingMesa.codigo !== dataMesa.codigo) return handleHttpError(res, "Código incorrecto", 401)
 
-        if(existingMesa.estado === mesa_estado.Ocupada) return handleHttpError(res, "MESA OCUPADA", 404)
+        if(existingMesa.estado === mesa_estado.Ocupada) return handleHttpError(res, "Mesa ocupada", 401)
 
         return res.status(200).json({ ok: true });
     } catch (err) {
