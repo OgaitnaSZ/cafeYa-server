@@ -42,7 +42,7 @@ export async function validarCodigoDinamico(req: Request, res: Response) {
 
         if(existingMesa.estado === mesa_estado.Ocupada) return handleHttpError(res, "Mesa ocupada", 401)
 
-        return res.status(200).json({ ok: true });
+        return res.status(200).json(existingMesa);
     } catch (err) {
       return handleHttpError(res, "Error al validar codigo de la mesa", 500)
     }
