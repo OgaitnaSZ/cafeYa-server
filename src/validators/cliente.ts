@@ -9,12 +9,12 @@ export const validatorCrearCliente = [
     .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
 
   check("email")
-    .optional()
+    .optional({ checkFalsy: true })
     .isEmail().withMessage("El email no es válido")
     .isLength({ max: 30 }).withMessage("El email debe tener como máximo 30 caracteres"),
 
   check("telefono")
-    .optional()
+    .optional({ checkFalsy: true })
     .isLength({ max: 30 }).withMessage("El telefono debe tener como máximo 30 caracteres"),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
