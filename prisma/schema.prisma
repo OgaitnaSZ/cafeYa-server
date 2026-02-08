@@ -93,16 +93,17 @@ model producto {
   producto_id     String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
   nombre          String            @db.VarChar(255)
   descripcion     String            @db.Text
+  categoria_id    Int
   imagen_url      String?           @db.VarChar(500)
-  categoria       String            @db.VarChar(100)
   precio_unitario Decimal           @db.Decimal(10, 2)
   disponibilidad  Boolean           @default(true)
   created_at      DateTime          @default(now()) @db.Timestamp(0)
   updated_at      DateTime          @default(now()) @db.Timestamp(0)
   pedido_producto pedido_producto[]
+  categoria       categoria         @relation(fields: [categoria_id], references: [categoria_id], onUpdate: Restrict, map: "producto_ibfk_1")
 
-  @@index([categoria], map: "idx_producto_categoria")
   @@index([disponibilidad], map: "idx_producto_disponibilidad")
+  @@index([categoria_id], map: "categoria_id")
 }
 
 model usuario {
@@ -114,6 +115,14 @@ model usuario {
   activo     Boolean?    @default(true)
   created_at DateTime    @default(now()) @db.Timestamp(0)
   updated_at DateTime    @default(now()) @db.Timestamp(0)
+}
+
+model categoria {
+  categoria_id Int        @id @default(autoincrement())
+  nombre       String     @db.VarChar(100)
+  emoji        String     @db.VarChar(10)
+  created_at   DateTime   @default(now()) @db.Timestamp(0)
+  producto     producto[]
 }
 
 enum mesa_estado {

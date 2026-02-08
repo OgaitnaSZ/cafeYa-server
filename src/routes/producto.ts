@@ -7,6 +7,9 @@ import * as validator from "../validators/producto";
 router.get("/producto/:id", validator.validatorId, producto.obtenerProducto);
 
 // Obtener productos
-router.get("/productos", validator.validatorProductos, producto.obtenerProductos);
+router.get("/productos", producto.obtenerProductos);
+
+// Obtener categorias
+router.get("/categorias", producto.obtenerCategorias);
 
 export { router };
