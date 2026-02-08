@@ -17,7 +17,7 @@ export async function crearCliente(req: Request, res: Response) {
       },
     });
 
-    res.status(201).json({"message": "Suscripto correctamente.", "email": newClient });
+    res.status(201).json({"message": "Suscripto correctamente.", "user": newClient });
   }catch(error){
     return handleHttpError(res, "Error al suscribir", 500);
   }
