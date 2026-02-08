@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
+import { tokenSign } from "../utils/handlerJwt";
 import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()
 
@@ -17,7 +18,9 @@ export async function crearCliente(req: Request, res: Response) {
       },
     });
 
-    res.status(201).json({"message": "Suscripto correctamente.", "user": newClient });
+    const token = await tokenSign(newClient.cliente_id, newClient.nombre);
+    
+    res.status(201).json({"message": "Suscripto correctamente.", "user": newClient, "token": token });
   }catch(error){
     return handleHttpError(res, "Error al suscribir", 500);
   }

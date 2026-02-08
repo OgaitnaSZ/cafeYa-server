@@ -21,7 +21,7 @@ export async function login(req: Request, res: Response) {
     const check = await compare(dataLogin.password, hashPassword);
     if(!check){ return handleHttpError(res, "PASSWORD INVALIDO", 400) }
 
-    const token = await tokenSign(existingUser);
+    const token = await tokenSign(existingUser.id, existingUser.nombre);
     const { password, ...userWithoutPassword } = existingUser; // Eliminar password para la respuesta
     
     const data = {

@@ -10,12 +10,12 @@ if (!JWT_SECRET) {
 *Pasar el objeto usuario
 * @param {*} usuario
 */
-export const tokenSign = async (usuario: usuario)=>{
+export const tokenSign = async (id: string, nombre: string)=>{
 
     return await jwt.sign(
         {
-            id: usuario.id,
-            nombre: usuario.nombre
+            id: id,
+            nombre: nombre
         },
         JWT_SECRET,
         {

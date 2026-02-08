@@ -106,7 +106,7 @@ model producto {
 }
 
 model usuario {
-  id         Int         @id @default(autoincrement())
+  id         String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
   nombre     String      @db.VarChar(255)
   email      String      @unique(map: "email") @db.VarChar(255)
   password   String      @db.VarChar(255)
