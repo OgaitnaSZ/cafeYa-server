@@ -53,6 +53,7 @@ model pago {
 
 model pedido {
   pedido_id       String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  numero_pedido   String            @unique @db.VarChar(20) 
   cliente_id      String            @db.Char(36)
   nombre_cliente  String            @db.VarChar(255)
   mesa_id         String            @db.Char(36)
@@ -74,6 +75,7 @@ model pedido {
   @@index([mesa_id], map: "idx_pedido_mesa")
   @@index([pedido_padre], map: "idx_pedido_padre")
   @@index([cliente_id], map: "fk_pedido_cliente")
+  @@index([numero_pedido], map: "idx_numero_pedido") 
 }
 
 model pedido_producto {

@@ -19,11 +19,11 @@ export const validatorNuevoPedido = [
     .notEmpty().withMessage("Productos no puede estar vacío"),
 
   check("nota")
-    .exists().withMessage("Nota es requerido")
-    .notEmpty().withMessage("Nota no puede estar vacío"),
+    .optional({ checkFalsy: true })
+    .isLength({ max: 100 }).withMessage("La nota debe tener como máximo 100 caracteres"),
 
   check("pedido_padre_id")
-    .optional()
+    .optional({ checkFalsy: true })
     .isUUID(),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
