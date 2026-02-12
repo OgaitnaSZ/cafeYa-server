@@ -10,15 +10,16 @@ export async function crearPedido(req: Request, res: Response) {
   try {
     const dataPedido = matchedData(req);
 
+    
     const productos: producto[] = dataPedido.productos;
     
     const precioTotal = productos.reduce(
       (total: number, p: any) => {
         const precio = typeof p.precio_unitario === 'number' 
-          ? p.precio_unitario
-          : typeof p.precio_unitario === 'string'
-          ? parseFloat(p.precio_unitario)
-          : p.precio_unitario?.toNumber?.() ?? 0;
+        ? p.precio_unitario
+        : typeof p.precio_unitario === 'string'
+        ? parseFloat(p.precio_unitario)
+        : p.precio_unitario?.toNumber?.() ?? 0;
         
         const cantidad = p.cantidad || 1;
         
@@ -26,11 +27,11 @@ export async function crearPedido(req: Request, res: Response) {
       },
       0
     );
-
+    
     const result = await prisma.$transaction(async (tx) => {
-
+      
       const pedidoNumero = await generarNumeroPedido();
-
+      
       const pedido = await tx.pedido.create({
         data: {
           numero_pedido: pedidoNumero,
@@ -43,11 +44,10 @@ export async function crearPedido(req: Request, res: Response) {
           ...(dataPedido.pedido_padre_id && { pedido_padre: dataPedido.pedido_padre_id })
         }
       });
-
       
       const productosConPedido = dataPedido.productos.map((p: any) => ({
         pedido_id: pedido.pedido_id,
-        producto_id: p.producto_id,
+        producto_id: p.producto.producto_id,
         cantidad: p.cantidad,
         precio_unitario: p.precio_unitario
       }));
