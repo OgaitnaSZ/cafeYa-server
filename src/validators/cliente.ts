@@ -42,6 +42,11 @@ export const validatorModificarCliente = [
     .notEmpty().withMessage("El telefono no puede estar vacío")
     .isLength({ max: 30 }).withMessage("El telefono debe tener como máximo 30 caracteres"),
 
+  check("duracion_minutos")
+    .exists().withMessage("La duracion es requerida")
+    .notEmpty().withMessage("La duracion no puede estar vacía")
+    .isInt({ min: 15, max: 300 }),
+
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 

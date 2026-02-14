@@ -14,7 +14,8 @@ export async function crearCliente(req: Request, res: Response) {
       data: {
         nombre: dataUser.nombre,
         email: dataUser.email,
-        telefono: dataUser.telefono
+        telefono: dataUser.telefono,
+        duracion_minutos: dataUser.duracion_minutos
       },
     });
 
@@ -36,7 +37,8 @@ export async function obtenerCliente(req: Request, res: Response) {
           select: {
             nombre: true,
             email: true,
-            telefono: true
+            telefono: true,
+            duracion_minutos: true
           },
         });
     
