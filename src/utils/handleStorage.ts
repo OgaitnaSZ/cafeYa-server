@@ -4,9 +4,16 @@ import path from 'path';
 
 const uploadPath = path.join(__dirname, '../uploads');
 
+const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+const uploadPath = isVercel ? '/tmp/uploads' : path.join(__dirname, '../uploads');
+
 // Asegurarse de que la carpeta exista
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
+try {
+  if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true });
+  }
+} catch (error) {
+  console.error('Error creating upload directory:', error);
 }
 
 const storage = multer.diskStorage({
