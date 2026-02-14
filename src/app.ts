@@ -1,6 +1,6 @@
 import './global-types';
 import express from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import dotenv from 'dotenv';
 dotenv.config();
 import routes from "./routes/index";
@@ -12,8 +12,23 @@ const app = express();
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || '*',
+const allowedOrigins: string[] = [
+  process.env.FRONTEND_URL || '',
+  'http://localhost:4200'
+];
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
