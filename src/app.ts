@@ -27,7 +27,7 @@ app.get('/test', (req: Request, res:Response) => {
   res.json({ message: 'Server is alive!' });
 });
 
-app.use("/api", routes);|
+app.use("/api", routes);
 
 const port = process.env.PORT || 4001;
 const NODE_ENV = process.env.NODE_ENV;
