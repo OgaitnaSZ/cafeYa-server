@@ -4,23 +4,6 @@ import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()
 
-// Obtener Producto
-export async function obtenerProducto(req: Request, res: Response) {
-      try {
-        const data = matchedData(req);
-    
-        const existingProduct = await prisma.producto.findUnique({
-            where: { producto_id: data.id }
-        });
-          
-        if(!existingProduct) return handleHttpError(res, "PRODUCTO NO EXISTE", 404)
-
-        return res.status(200).json(existingProduct);
-    } catch (err) {
-      return handleHttpError(res, "Error al obtener producto", 500)
-    }
-}
-
 // Obtener Productos
 export async function obtenerProductos(req: Request, res: Response) {
     try {
@@ -31,6 +14,21 @@ export async function obtenerProductos(req: Request, res: Response) {
         return res.status(200).json(existingProducts);
     } catch (err) {
         return handleHttpError(res, "Error al obtener productos", 500);
+    }
+}
+
+// Obtener Productos destacados
+export async function obtenerProductosDestacados(req: Request, res: Response) {
+      try {
+        const existingProducts = await prisma.producto.findMany({
+            where: { destacado: true }
+        });
+          
+        if(!existingProducts) return handleHttpError(res, "No hay productos destacados.", 404)
+
+        return res.status(200).json(existingProducts);
+    } catch (err) {
+        return handleHttpError(res, "Error al obtener productos destacados", 500)
     }
 }
 
