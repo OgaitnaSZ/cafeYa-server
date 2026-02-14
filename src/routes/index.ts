@@ -1,31 +1,23 @@
-import { readdirSync } from "fs";
 import express, { Router } from "express";
-import path from "path";
+
+import { router as auth } from "./auth";
+import { router as calificacion } from "./calificacion";
+import { router as cliente } from "./cliente";
+import { router as gestion } from "./gestion";
+import { router as mesa } from "./mesa";
+import { router as pago } from "./pago";
+import { router as pedido } from "./pedido";
+import { router as producto } from "./producto";
 
 const router: Router = express.Router();
-const PATH_ROUTES = __dirname;
 
-// Detecta si está corriendo el código compilado o en ts-node
-const isCompiled = path.extname(__filename) === ".js";
-
-function removeExtension(fileName: string): string {
-  return fileName.split(".").shift() as string;
-}
-
-function loadRouter(file: string): void {
-  const name = removeExtension(file);
-  if (name !== "index") {
-    const routerModule = require(path.join(PATH_ROUTES, file));
-    router.use(`/${name}`, routerModule.router); 
-  }
-}
-
-readdirSync(PATH_ROUTES)
-  // En dev usa .ts, en prod usa .js
-  .filter((file) => {
-    const ext = path.extname(file);
-    return isCompiled ? ext === ".js" : ext === ".ts";
-  })
-  .forEach((file) => loadRouter(file));
+router.use("/auth", auth);
+router.use("/calificacion", calificacion);
+router.use("/cliente", cliente);
+router.use("/gestion", gestion);
+router.use("/mesa", mesa);
+router.use("/pago", pago);
+router.use("/pedido", pedido);
+router.use("/producto", producto);
 
 export default router;

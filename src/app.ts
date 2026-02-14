@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import routes from "./routes/index";
 import path from 'path';
+import { Request, Response } from "express";
 
 const app = express();
 
@@ -21,6 +22,12 @@ app.use(cors(corsOptions));
 
 // Importacion dinamica de rutas
 app.use("/api", routes);
+// Ruta de prueba
+app.get('/test', (req: Request, res:Response) => {
+  res.json({ message: 'Server is alive!' });
+});
+
+app.use("/api", routes);|
 
 const port = process.env.PORT || 4001;
 const NODE_ENV = process.env.NODE_ENV;
