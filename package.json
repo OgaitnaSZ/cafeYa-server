@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon ./src/app.ts",
     "build": "tsc --build && npx prisma generate",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "vercel-build": "prisma generate && tsc"
   },
   "keywords": [],
   "author": "",
