@@ -2,8 +2,6 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 
-const uploadPath = path.join(__dirname, '../uploads');
-
 const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
 const uploadPath = isVercel ? '/tmp/uploads' : path.join(__dirname, '../uploads');
 
