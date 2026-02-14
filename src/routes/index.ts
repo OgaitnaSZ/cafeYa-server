@@ -16,7 +16,7 @@ function loadRouter(file: string): void {
   const name = removeExtension(file);
   if (name !== "index") {
     const routerModule = require(path.join(PATH_ROUTES, file));
-    router.use(`/${name}`, routerModule.router);
+    router.use(`/${name}`, routerModule.router); 
   }
 }
 
