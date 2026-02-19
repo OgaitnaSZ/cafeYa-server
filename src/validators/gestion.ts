@@ -3,6 +3,59 @@ import { Request, Response, NextFunction } from "express";
 import { validateResults } from "../utils/handleValidator";
 import { mesa_estado, pedido_estado } from "@prisma/client";
 
+export const validatorCrearUsuario = [
+  check("nombre")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
+    .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
+
+  check("email")
+    .exists().withMessage("El email es requerido")
+    .notEmpty().withMessage("El email no puede estar vacío")
+    .isEmail().withMessage("El email no es válido")
+    .isLength({ max: 30 }).withMessage("El email debe tener como máximo 30 caracteres"),
+
+  check("password")
+    .exists().withMessage("Password requerido")
+    .notEmpty().withMessage("Password no puede estar vacío")
+    .isLength({ min: 5, max: 20 }).withMessage("Password debe tener entre 5 y 20 caracteres"),
+
+  check("rol")
+    .exists().withMessage("El rol es requerido")
+    .notEmpty().withMessage("El rol no puede estar vacío"),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
+export const validatorActualizarUsuario = [
+  check("id")
+    .isUUID().withMessage('El ID debe ser un UUID válido.')
+    .exists().withMessage("El id es requerido")
+    .notEmpty().withMessage("El id no puede estar vacío"),
+
+  check("nombre")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
+    .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
+
+  check("email")
+    .exists().withMessage("El email es requerido")
+    .notEmpty().withMessage("El email no puede estar vacío")
+    .isEmail().withMessage("El email no es válido")
+    .isLength({ max: 30 }).withMessage("El email debe tener como máximo 30 caracteres"),
+
+  check("password")
+    .exists().withMessage("Password requerido")
+    .notEmpty().withMessage("Password no puede estar vacío")
+    .isLength({ min: 5, max: 20 }).withMessage("Password debe tener entre 5 y 20 caracteres"),
+
+  check("rol")
+    .exists().withMessage("El rol es requerido")
+    .notEmpty().withMessage("El rol no puede estar vacío"),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
 export const validatorEstadoMesa = [
   check("mesa_id")
     .exists().withMessage("Id de mesa es requerido")
