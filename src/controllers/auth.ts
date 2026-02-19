@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
-import { compare } from "bcryptjs";
+import { compare, encrypt } from "../utils/handlePassword";
 import { tokenSign } from "../utils/handlerJwt";
 import { handleHttpError } from "../utils/handleError";
 const prisma = new PrismaClient()

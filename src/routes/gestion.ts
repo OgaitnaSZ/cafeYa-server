@@ -38,6 +38,8 @@ router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualiz
 // Obtener Pedidos Activos
 router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 
+
+
 /* --- SOLO ADMIN --- */
 //Obtener Pedidos Por Mesa
 router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
@@ -59,6 +61,5 @@ router.get("/producto/:id", adminOnly, validator.validatorId, gestion.obtenerPro
 
 // Obtener calificaciones
 router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);
-
 
 export { router };
