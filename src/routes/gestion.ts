@@ -82,6 +82,19 @@ router.post("/producto/foto", uploadMiddleware, validator.validatorIdFoto, gesti
 // Eliminar foto
 router.delete("foto/eliminar/:id", validator.validatorId, gestion.eliminarFoto);
 
+/* --- CATEGORIAS --- */
+// Obtener categorias
+router.get("/categoria/categorias", encargadoOrAdmin, gestion.obtenerCategorias);
+
+// Crear categoria
+router.post("/categoria/crear", adminOnly, validator.validatorCrearCategoria, gestion.crearCategoria);
+
+// Actualizar categoria
+router.put("/categoria/editar", adminOnly, validator.validatorActualizarCategoria, gestion.actualizarCategoria);
+
+// Eliminar categoria
+router.delete("/categoria/eliminar/:id", validator.validatorIdInt, gestion.eliminarCategoria);
+
 /* --- CALIFICACIONES --- */
 // Obtener calificaciones
 router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);

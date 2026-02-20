@@ -94,7 +94,7 @@ export const validatorCrearProducto = [
     .notEmpty().withMessage("La descripcion no puede estar vacía")
     .isLength({ max: 100 }).withMessage("La descripcion debe tener como máximo 100 caracteres"),
 
-  check("categoria")
+  check("categoria_id")
     .exists().withMessage("La categoria es requerida")
     .notEmpty().withMessage("La categoria no puede estar vacía")
     .isLength({ max: 30 }).withMessage("La categoria debe tener como máximo 30 caracteres"),
@@ -127,7 +127,7 @@ check("producto_id")
     .optional()
     .isLength({ max: 200 }).withMessage("La url debe tener como máximo 100 caracteres"),
 
-  check("categoria")
+  check("categoria_id")
     .exists().withMessage("La categoria es requerida")
     .notEmpty().withMessage("La categoria no puede estar vacía")
     .isLength({ max: 30 }).withMessage("La categoria debe tener como máximo 30 caracteres"),
@@ -140,9 +140,51 @@ check("producto_id")
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 
+export const validatorCrearCategoria = [
+  check("nombre")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
+    .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
+
+  check("emoji")
+    .exists().withMessage("El emoji es requerido")
+    .notEmpty().withMessage("El emoji no puede estar vacío")
+    .isLength({ max: 2 }).withMessage("El emoji debe tener como máximo 2 caracteres"),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+]
+
+export const validatorActualizarCategoria = [
+  check("nombre")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
+    .isLength({ max: 30 }).withMessage("El nombre debe tener como máximo 30 caracteres"),
+
+  check("emoji")
+    .exists().withMessage("El emoji es requerido")
+    .notEmpty().withMessage("El emoji no puede estar vacío")
+    .isLength({ max: 2 }).withMessage("El emoji debe tener como máximo 2 caracteres"),
+
+  check("categoria_id")
+    .exists().withMessage("El ID es obligatorio")
+    .notEmpty().withMessage("El ID no puede estar vacío")
+    .isInt({ min: 0}).withMessage("El valor debe ser entero positivo"),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+]
+
 export const validatorId = [
     param("id")
     .isUUID().withMessage('El ID debe ser un UUID válido.'),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
+export const validatorIdInt = [
+    param("id")
+    .exists().withMessage("El ID es obligatorio")
+    .notEmpty().withMessage("El ID no puede estar vacío")
+    .isInt({ min: 0}).withMessage("El valor debe ser entero positivo"),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];

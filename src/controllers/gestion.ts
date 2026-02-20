@@ -260,9 +260,8 @@ export async function actualiarProducto(req: Request, res: Response) {
         nombre: dataProducto.nombre,
         descripcion: dataProducto.descripcion,
         imagen_url: dataProducto.imagen_url,
-        categoria: dataProducto.categoria,
+        categoria_id: dataProducto.categoria_id,
         precio_unitario: dataProducto.precio_unitario
-        
       }
     });
 
@@ -305,12 +304,12 @@ export async function toggleEstadoProducto(req: Request, res: Response) {
 
     console.log(nuevoEstado);
 
-    await prisma.producto.update({
+    const updatedProduct = await prisma.producto.update({
       where: { producto_id: id},
       data: { estado: nuevoEstado }
     });
 
-    res.status(200).json(producto);
+    res.status(200).json(updatedProduct);
   } catch (err) {
     return handleHttpError(res, "Error al actualizar el estado del usuario", 500)
   }
@@ -347,7 +346,7 @@ export async function destacarProducto(req: Request, res: Response) {
       data: { destacado: nuevoEstado }
     });
   
-    return res.status(200).json({productoActualizado});
+    return res.status(200).json(productoActualizado);
     
   } catch (err) {
     return handleHttpError(res, "Error al actualizar el estado del producto", 500)
@@ -376,7 +375,7 @@ export async function eliminarProducto(req: Request, res: Response) {
       data: { is_archived: true }
     });
 
-    return res.status(200).json({ message: "Producto eliminado correctamente", producto });
+    return res.status(200).json(producto);
 
   } catch (err) {
     return handleHttpError(res, "Error al eliminar producto", 500)
@@ -425,6 +424,88 @@ export async function eliminarFoto(req: Request, res: Response){
   } catch (err) {
     return handleHttpError(res, "Error al intentar eliminar foto", 404);
   }
+}
+
+// Categorias
+export async function obtenerCategorias(req: Request, res: Response) {
+    try {
+        const categorias = await prisma.categoria.findMany();
+        
+        if(!categorias) return handleHttpError(res, "No hay categorias", 404)
+
+        return res.status(200).json(categorias);
+    } catch (err) {
+        return handleHttpError(res, "Error al obtener categorias", 500)
+    }
+}
+
+export async function crearCategoria(req: Request, res: Response) {
+  try{
+    const categoria = matchedData(req);
+
+    const newCategoria = await prisma.categoria.create({
+      data: {
+        nombre: categoria.nombre,
+        emoji: categoria.emoji
+      },
+    });
+
+    res.status(201).json(newCategoria);
+  }catch(error){
+    return handleHttpError(res, "Error al crear el categoria", 500);
+  }
+}
+
+export async function actualizarCategoria(req: Request, res: Response) {
+  try {
+    const dataCategoria = matchedData(req);
+
+    const updatedCategoria = await prisma.categoria.update({
+      where: { categoria_id: dataCategoria.categoria_id },
+      data: { 
+        nombre: dataCategoria.nombre,
+        emoji: dataCategoria.emoji
+      }
+    });
+
+    if(!updatedCategoria) return handleHttpError(res, "ID de categoria incorrecto", 404)
+
+    res.status(200).json(updatedCategoria);
+  } catch (err) {
+    return handleHttpError(res, "Error al actualizar categoria", 500)
+  }
+}
+
+export async function eliminarCategoria(req: Request, res: Response) {
+    try {
+        const id = Number(req.params.id);
+
+        // Validar que sea número entero positivo
+        if (!Number.isInteger(id) || id <= 0) {
+            return handleHttpError(res, "ID de categoría inválido", 400);
+        }
+
+        const categoria = await prisma.categoria.findUnique({
+          where: { categoria_id: Number(id) }
+        })
+
+        if (!categoria) return handleHttpError(res, "Categoría no encontrada", 404);
+
+        // Desasociar productos y eliminar en una transacción
+        await prisma.$transaction([
+            prisma.producto.updateMany({
+                where: { categoria_id: id },
+                data: { categoria_id: 0 }
+            }),
+            prisma.categoria.delete({
+                where: { categoria_id: id }
+            })
+        ]);
+
+        return res.status(200).json({ success: true });
+    } catch (err) {
+        return handleHttpError(res, "Error al obtener mesas", 500)
+    }
 }
 
 // Calificaciones
