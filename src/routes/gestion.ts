@@ -39,7 +39,7 @@ router.delete("usuario/eliminar/:id", validator.validatorId, gestion.eliminarUsu
 router.get("/mesa/mesas", encargadoOrAdmin, gestion.obtenerMesas);
 
 // Toggle estado mesa
-router.patch("/mesa/estado", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoMesa);
+router.patch("/mesa/estado/:id", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoMesa);
 
 // Actualizar codigo mesa
 router.patch("/mesa/codigo", encargadoOrAdmin, validator.validatorCodigoMesa, gestion.actualizarCodigoMesa);
@@ -62,16 +62,19 @@ router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtene
 router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
 
 // Actualizar producto
-router.put("/producto", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
+router.put("/producto/editar", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
 
 // Obtener productos
 router.get("/producto/productos", adminOnly, gestion.obtenerProductos);
 
 // Toggle estado producto
-router.patch("/producto/estado", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoProducto);
+router.patch("/producto/estado/:id", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoProducto);
+
+// Destacar producto
+router.patch("/producto/destacar/:id", encargadoOrAdmin, validator.validatorId, gestion.destacarProducto);
 
 // Eliminar producto
-router.delete("producto/eliminar/:id", validator.validatorId, gestion.eliminarProducto);
+router.delete("/producto/eliminar/:id", validator.validatorId, gestion.eliminarProducto);
 
 // Subir foto producto
 router.post("/producto/foto", uploadMiddleware, validator.validatorIdFoto, gestion.subirFoto);

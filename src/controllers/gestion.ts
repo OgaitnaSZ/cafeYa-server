@@ -277,7 +277,9 @@ export async function actualiarProducto(req: Request, res: Response) {
 // Obtener todos 
 export async function obtenerProductos(req: Request, res: Response) {
     try {
-        const productos = await prisma.producto.findMany();
+        const productos = await prisma.producto.findMany({
+          where: { is_archived: false }
+        });
         
         if(!productos) return handleHttpError(res, "No hay productos", 404)
 
@@ -301,6 +303,8 @@ export async function toggleEstadoProducto(req: Request, res: Response) {
     // Cambiar a nuevo estado
     const nuevoEstado = producto.estado === "Activo" ? "Inactivo" : "Activo";
 
+    console.log(nuevoEstado);
+
     await prisma.producto.update({
       where: { producto_id: id},
       data: { estado: nuevoEstado }
@@ -312,21 +316,58 @@ export async function toggleEstadoProducto(req: Request, res: Response) {
   }
 }
 
+export async function destacarProducto(req: Request, res: Response) {
+  try {
+    const data = req.params;
+    const id = <string>data.id;
+
+    const producto = await prisma.producto.findUnique({
+      where: { producto_id: id }
+    })
+
+    if (!producto) return handleHttpError(res, "ID del producto incorrecto", 404);
+
+    const nuevoEstado = !producto.destacado;
+    
+    if (nuevoEstado) {
+      const totalDestacados = await prisma.producto.count({
+        where: {
+          destacado: true,
+          is_archived: false
+        }
+      });
+  
+      if (totalDestacados >= 4) {
+        return handleHttpError(res, "Ya existen 4 productos destacados", 400);
+      }
+    }
+  
+    const productoActualizado = await prisma.producto.update({
+      where: { producto_id: id },
+      data: { destacado: nuevoEstado }
+    });
+  
+    return res.status(200).json({productoActualizado});
+    
+  } catch (err) {
+    return handleHttpError(res, "Error al actualizar el estado del producto", 500)
+  }
+}
+
 export async function eliminarProducto(req: Request, res: Response) {
   try {
     const data = req.params;
     const id = <string>data.id;
 
     const producto = await prisma.producto.findUnique({
-      where: { producto_id: id },
-      include: { foto: true }
+      where: { producto_id: id }
     })
 
     if (!producto) return handleHttpError(res, "ID del usuario incorrecto", 404);
 
     // Eliminar imagen solo si existe
-    if (producto.foto.length > 0 && producto.foto !== undefined) {
-      await eliminarFotoPorId(producto.foto[0]!.foto_id);
+    if (producto.imagen_url) {
+      await eliminarFotoPorId(producto.producto_id);
     }
 
     // Archivar producto (soft delete)
@@ -335,7 +376,7 @@ export async function eliminarProducto(req: Request, res: Response) {
       data: { is_archived: true }
     });
 
-    return res.status(200).json({ message: "Producto eliminado correctamente" });
+    return res.status(200).json({ message: "Producto eliminado correctamente", producto });
 
   } catch (err) {
     return handleHttpError(res, "Error al eliminar producto", 500)
@@ -402,16 +443,16 @@ export async function obtenerCalificaciones(req: Request, res: Response) {
 
 // Utils
 export async function eliminarFotoPorId(id: string) {
-  const foto = await prisma.foto.findUnique({
-    where: { foto_id: id }
+  const producto = await prisma.producto.findUnique({
+    where: { producto_id: id }
   });
 
-  if (!foto) {
-    throw new Error("Archivo no encontrado en la base de datos");
+  if (!producto) {
+    throw new Error("Producto no existe");
   }
 
   // Eliminar archivo fisico
-  const filePath = foto.url;
+  const filePath = producto.imagen_url;
   const fileName = filePath?.split('/').pop();
 
   if (fileName && fs.existsSync(`${MEDIA_PATH}/${fileName}`)) {
@@ -419,8 +460,9 @@ export async function eliminarFotoPorId(id: string) {
   }
 
   // Eliminar registro de la db
-  await prisma.foto.delete({
-    where: { foto_id: id }
+  await prisma.producto.update({
+    where: { producto_id: id },
+    data: { imagen_url: null }
   });
 
   return true;

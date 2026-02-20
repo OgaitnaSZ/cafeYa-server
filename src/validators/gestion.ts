@@ -125,7 +125,7 @@ check("producto_id")
 
   check("imagen_url")
     .optional()
-    .isLength({ max: 100 }).withMessage("La url debe tener como máximo 100 caracteres"),
+    .isLength({ max: 200 }).withMessage("La url debe tener como máximo 100 caracteres"),
 
   check("categoria")
     .exists().withMessage("La categoria es requerida")
