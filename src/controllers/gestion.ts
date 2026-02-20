@@ -3,12 +3,13 @@ import { pedido_estado, PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { encrypt } from "../utils/handlePassword";
+import fs from 'fs';
+import path from 'path';
 const prisma = new PrismaClient()
-
+const MEDIA_PATH = `${__dirname}/../uploads`;
 const PUBLIC_URL = process.env.PUBLIC_URL;
 
 // Usuarios
-// Obtener usuarios
 export async function obteneUsuarios(req: Request, res: Response) {
     try {
         const existingUsers = await prisma.usuario.findMany();
@@ -63,31 +64,6 @@ export async function actualiarUsuario(req: Request, res: Response) {
   }
 }
 
-export async function toggleEstadoUsuario(req: Request, res: Response) {
-  try {
-    const data = req.params;
-    const id = <string>data.id;
-
-    const user = await prisma.usuario.findUnique({
-      where: { id }
-    })
-
-    if (!user) return handleHttpError(res, "ID del usuario incorrecto", 404);
-
-    // Cambiar a nuevo estado
-    const nuevoEstado = user.activo === true ? false : true;
-
-    await prisma.usuario.update({
-      where: { id },
-      data: { activo: nuevoEstado }
-    });
-
-    res.status(200).json(user);
-  } catch (err) {
-    return handleHttpError(res, "Error al actualizar el estado del usuario", 500)
-  }
-}
-
 export async function eliminarUsuario(req: Request, res: Response) {
     try {
         const data = req.params;
@@ -110,7 +86,6 @@ export async function eliminarUsuario(req: Request, res: Response) {
 }
 
 // Mesas
-// Obtener mesas
 export async function obtenerMesas(req: Request, res: Response) {
     try {
         const data = matchedData(req);
@@ -125,27 +100,31 @@ export async function obtenerMesas(req: Request, res: Response) {
     }
 }
 
-// Actualizar estado
-export async function actualizarEstadoMesa(req: Request, res: Response) {
+export async function toggleEstadoMesa(req: Request, res: Response) {
   try {
-    const dataMesa = matchedData(req);
+    const data = req.params;
+    const id = <string>data.id;
 
-    const updatedMesa = await prisma.mesa.update({
-      where: { mesa_id: dataMesa.mesa_id },
-      data: { 
-        estado: dataMesa.estado
-      }
+    const mesa = await prisma.mesa.findUnique({
+      where: { mesa_id: id }
+    })
+
+    if (!mesa) return handleHttpError(res, "ID del mesa incorrecto", 404);
+
+    // Cambiar a nuevo estado
+    const nuevoEstado = mesa.estado === "Disponible" ? "Ocupada" : "Disponible";
+
+    await prisma.mesa.update({
+      where: { mesa_id: id},
+      data: { estado: nuevoEstado }
     });
 
-    if(!updatedMesa) return handleHttpError(res, "ID de mesa incorrecto", 404)
-
-    res.status(200).json(updatedMesa);
+    res.status(200).json(mesa);
   } catch (err) {
     return handleHttpError(res, "Error al actualizar el estado de la mesa", 500)
   }
 }
 
-// Actualizar codigo
 export async function actualizarCodigoMesa(req: Request, res: Response) {
   try {
     const dataMesa = matchedData(req);
@@ -162,6 +141,30 @@ export async function actualizarCodigoMesa(req: Request, res: Response) {
     res.status(200).json(updatedMesa);
   } catch (err) {
     return handleHttpError(res, "Error al actualizar el codigo de la mesa", 500)
+  }
+}
+
+export async function eliminarMesa(req: Request, res: Response) {
+  try {
+    const data = req.params;
+    const id = <string>data.id;
+
+    const mesa = await prisma.mesa.findUnique({
+      where: { mesa_id: id }
+    })
+
+    if (!mesa) return handleHttpError(res, "ID de mesa incorrecto", 404);
+
+    // Archivar mesa (soft delete)
+    await prisma.mesa.update({
+      where: { mesa_id: id },
+      data: { is_archived: true }
+    });
+
+    return res.status(200).json({ message: "Mesa eliminada correctamente" });
+
+  } catch (err) {
+    return handleHttpError(res, "Error al eliminar mesa", 500)
   }
 }
 
@@ -284,39 +287,59 @@ export async function obtenerProductos(req: Request, res: Response) {
     }
 }
 
+export async function toggleEstadoProducto(req: Request, res: Response) {
+  try {
+    const data = req.params;
+    const id = <string>data.id;
+
+    const producto = await prisma.producto.findUnique({
+      where: { producto_id: id }
+    })
+
+    if (!producto) return handleHttpError(res, "ID del producto incorrecto", 404);
+
+    // Cambiar a nuevo estado
+    const nuevoEstado = producto.estado === "Activo" ? "Inactivo" : "Activo";
+
+    await prisma.producto.update({
+      where: { producto_id: id},
+      data: { estado: nuevoEstado }
+    });
+
+    res.status(200).json(producto);
+  } catch (err) {
+    return handleHttpError(res, "Error al actualizar el estado del usuario", 500)
+  }
+}
+
 export async function eliminarProducto(req: Request, res: Response) {
   try {
     const data = req.params;
     const id = <string>data.id;
 
-    const user = await prisma.usuario.findUnique({
-      where: { id }
+    const producto = await prisma.producto.findUnique({
+      where: { producto_id: id },
+      include: { foto: true }
     })
 
-    if (!user) return handleHttpError(res, "ID del usuario incorrecto", 404);
+    if (!producto) return handleHttpError(res, "ID del usuario incorrecto", 404);
 
-    // Eliminar imagen
-
-    // Eliminar producto
-    await prisma.producto.update({
-      where: { producto_id: String(id) },
-      data: { estado: "Eliminado" }
-    })
-  }
-}
-
-// Calificaciones
-// Obtener calificaciones
-export async function obtenerCalificaciones(req: Request, res: Response) {
-    try {
-        const calificaciones = await prisma.calificacion.findMany();
-        
-        if(!calificaciones) return handleHttpError(res, "No hay calificaciones", 404)
-
-        return res.status(200).json(calificaciones);
-    } catch (err) {
-        return handleHttpError(res, "Error al obtener calificaciones", 500)
+    // Eliminar imagen solo si existe
+    if (producto.foto.length > 0 && producto.foto !== undefined) {
+      await eliminarFotoPorId(producto.foto[0]!.foto_id);
     }
+
+    // Archivar producto (soft delete)
+    await prisma.producto.update({
+      where: { producto_id: id },
+      data: { is_archived: true }
+    });
+
+    return res.status(200).json({ message: "Producto eliminado correctamente" });
+
+  } catch (err) {
+    return handleHttpError(res, "Error al eliminar producto", 500)
+  }
 }
 
 // Fotos
@@ -354,4 +377,51 @@ export async function subirFoto(req: Request, res: Response) {
 
 // Eliminar foto
 export async function eliminarFoto(req: Request, res: Response){
+  try {
+    const id = req.params.id;
+    await eliminarFotoPorId(String(id));
+    res.status(200).json({ message: "Foto eliminada correctamente" });
+  } catch (err) {
+    return handleHttpError(res, "Error al intentar eliminar foto", 404);
+  }
+}
+
+// Calificaciones
+// Obtener calificaciones
+export async function obtenerCalificaciones(req: Request, res: Response) {
+    try {
+        const calificaciones = await prisma.calificacion.findMany();
+        
+        if(!calificaciones) return handleHttpError(res, "No hay calificaciones", 404)
+
+        return res.status(200).json(calificaciones);
+    } catch (err) {
+        return handleHttpError(res, "Error al obtener calificaciones", 500)
+    }
+}
+
+// Utils
+export async function eliminarFotoPorId(id: string) {
+  const foto = await prisma.foto.findUnique({
+    where: { foto_id: id }
+  });
+
+  if (!foto) {
+    throw new Error("Archivo no encontrado en la base de datos");
+  }
+
+  // Eliminar archivo fisico
+  const filePath = foto.url;
+  const fileName = filePath?.split('/').pop();
+
+  if (fileName && fs.existsSync(`${MEDIA_PATH}/${fileName}`)) {
+    fs.unlinkSync(`${MEDIA_PATH}/${fileName}`);
+  }
+
+  // Eliminar registro de la db
+  await prisma.foto.delete({
+    where: { foto_id: id }
+  });
+
+  return true;
 }

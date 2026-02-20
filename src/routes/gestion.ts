@@ -21,26 +21,7 @@ const cocinaOrAdmin = checkRol([
 ]);
 
 
-/* --- ENCARGADO --- */
-// Obtener Mesas
-router.get("/mesas", encargadoOrAdmin, gestion.obtenerMesas);
-
-// Actualizar estado mesas
-router.patch("/mesas/estado", encargadoOrAdmin, validator.validatorEstadoMesa, gestion.actualizarEstadoMesa);
-
-// Actualizar codigo mesa
-router.patch("/mesas/codigo", encargadoOrAdmin, validator.validatorCodigoMesa, gestion.actualizarCodigoMesa);
-
-// Actualizar Estado Pedido
-router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
-
-/* --- COCINA --- */
-// Obtener Pedidos Activos
-router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
-
-
-
-/* --- SOLO ADMIN --- */
+/* --- USUARIOS --- */
 // Obtener Usuarios
 router.get("/usuario/usuarios", adminOnly, gestion.obteneUsuarios);
 
@@ -50,30 +31,55 @@ router.post("/usuario/crear", adminOnly, validator.validatorCrearUsuario, gestio
 // Actualizar Usuario
 router.put("/usuario", adminOnly, validator.validatorActualizarUsuario, gestion.actualiarUsuario);
 
-// Cambiar Estado usuario
-router.patch("usuario", adminOnly, validator.validatorId, gestion.toggleEstadoUsuario);
-
 // Eliminar Usuario
 router.delete("usuario/eliminar/:id", validator.validatorId, gestion.eliminarUsuario);
+
+/* --- MESAS --- */
+// Obtener Mesas
+router.get("/mesa/mesas", encargadoOrAdmin, gestion.obtenerMesas);
+
+// Toggle estado mesa
+router.patch("/mesa/estado", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoMesa);
+
+// Actualizar codigo mesa
+router.patch("/mesa/codigo", encargadoOrAdmin, validator.validatorCodigoMesa, gestion.actualizarCodigoMesa);
+
+// Eliminar Mesa
+router.delete("mesa/eliminar/:id", validator.validatorId, gestion.eliminarMesa);
+
+/* --- PEDIDOS --- */
+// Actualizar Estado Pedido
+router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
+
+// Obtener Pedidos Activos
+router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 
 //Obtener Pedidos Por Mesa
 router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
 
+/* --- PRODUCTOS --- */
 // Crear productos
 router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
 
 // Actualizar producto
 router.put("/producto", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
 
+// Obtener productos
+router.get("/producto/productos", adminOnly, gestion.obtenerProductos);
+
+// Toggle estado producto
+router.patch("/producto/estado", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoProducto);
+
+// Eliminar producto
+router.delete("producto/eliminar/:id", validator.validatorId, gestion.eliminarProducto);
+
 // Subir foto producto
 router.post("/producto/foto", uploadMiddleware, validator.validatorIdFoto, gestion.subirFoto);
 
-// Obtener productos
-router.get("/productos", adminOnly, gestion.obtenerProductos);
+// Eliminar foto
+router.delete("foto/eliminar/:id", validator.validatorId, gestion.eliminarFoto);
 
-// Eliminar producto
-
-
+/* --- CALIFICACIONES --- */
 // Obtener calificaciones
 router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);
 

@@ -56,20 +56,6 @@ export const validatorActualizarUsuario = [
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 
-export const validatorEstadoMesa = [
-  check("mesa_id")
-    .exists().withMessage("Id de mesa es requerido")
-    .notEmpty().withMessage("Id de mesa no puede estar vacío")
-    .isInt(),
-
-  check("estado")
-    .exists().withMessage("El estado es requerido")
-    .notEmpty().withMessage("El estado no puede estar vacío")
-    .isIn(Object.values(mesa_estado)),
-
-  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
-];
-
 export const validatorCodigoMesa = [
   check("mesa_id")
     .exists().withMessage("Id de mesa es requerido")

@@ -30,13 +30,14 @@ model cliente {
 }
 
 model mesa {
-  mesa_id    String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  numero     Int         @unique(map: "uq_mesa_numero")
-  codigo     String      @db.Char(4)
-  estado     mesa_estado @default(Disponible)
-  created_at DateTime    @default(now()) @db.Timestamp(0)
-  updated_at DateTime    @default(now()) @db.Timestamp(0)
-  pedido     pedido[]
+  mesa_id     String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  numero      Int         @unique(map: "uq_mesa_numero")
+  codigo      String      @db.Char(4)
+  estado      mesa_estado @default(Disponible)
+  created_at  DateTime    @default(now()) @db.Timestamp(0)
+  updated_at  DateTime    @default(now()) @db.Timestamp(0)
+  is_archived Boolean?    @default(false)
+  pedido      pedido[]
 }
 
 model pago {
@@ -99,11 +100,13 @@ model producto {
   categoria_id    Int
   imagen_url      String?           @db.VarChar(500)
   precio_unitario Decimal           @db.Decimal(10, 2)
-  stock           Int               @default(0)
-  estado          producto_estado   @default(Activo)
   created_at      DateTime          @default(now()) @db.Timestamp(0)
   updated_at      DateTime          @default(now()) @db.Timestamp(0)
   destacado       Boolean?          @default(false)
+  estado          producto_estado   @default(Activo)
+  stock           Int               @default(0)
+  is_archived     Boolean?          @default(false)
+  foto            foto[]
   pedido_producto pedido_producto[]
   categoria       categoria         @relation(fields: [categoria_id], references: [categoria_id], onUpdate: Restrict, map: "producto_ibfk_1")
 
@@ -117,7 +120,6 @@ model usuario {
   email      String      @unique(map: "email") @db.VarChar(255)
   password   String      @db.VarChar(255)
   rol        usuario_rol
-  activo     Boolean?    @default(true)
   created_at DateTime    @default(now()) @db.Timestamp(0)
   updated_at DateTime    @default(now()) @db.Timestamp(0)
 }
@@ -130,16 +132,15 @@ model categoria {
   producto     producto[]
 }
 
-enum producto_estado {
-  Activo
-  Inactivo
-  Eliminado
-}
+model foto {
+  foto_id     String   @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  producto_id String   @db.Char(36)
+  url         String?  @db.Text
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @default(now()) @db.Timestamp(0)
+  producto    producto @relation(fields: [producto_id], references: [producto_id], onDelete: Cascade, map: "fk_foto_producto")
 
-enum mesa_estado {
-  Disponible
-  Ocupada
-  Eliminada
+  @@index([producto_id], map: "fk_foto_producto")
 }
 
 enum pago_medio_de_pago {
@@ -159,4 +160,14 @@ enum pedido_estado {
   En_preparacion @map("En preparacion")
   Listo
   Entregado
+}
+
+enum mesa_estado {
+  Disponible
+  Ocupada
+}
+
+enum producto_estado {
+  Activo
+  Inactivo
 }
