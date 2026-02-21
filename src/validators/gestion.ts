@@ -56,16 +56,31 @@ export const validatorActualizarUsuario = [
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 
-export const validatorCodigoMesa = [
+export const validatorCrearMesa = [
+  check("numero")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
+    .isInt({ min: 0, max:30 }).withMessage("El valor debe ser entero positivo entre 0 y 30"),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
+export const validatorEditarMesa = [
   check("mesa_id")
-    .exists().withMessage("Id de mesa es requerido")
-    .notEmpty().withMessage("Id de mesa no puede estar vacío")
-    .isInt(),
+    .isUUID().withMessage('El ID debe ser un UUID válido.')
+    .exists().withMessage("El id es requerido")
+    .notEmpty().withMessage("El id no puede estar vacío"),
 
-  check("codigo_dinamico")
-    .exists().withMessage("El codigo es requerido")
-    .notEmpty().withMessage("El codigo no puede estar vacío"),
+  check("numero")
+    .exists().withMessage("El nombre es requerido")
+    .notEmpty().withMessage("El nombre no puede estar vacío")
+    .isInt({ min: 0, max:30 }).withMessage("El valor debe ser entero positivo entre 0 y 30"),
 
+  check("estado")
+    .exists().withMessage("El estado es requerido")
+    .isIn(Object.values(mesa_estado))
+    .withMessage("El estado no es válido"),
+    
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 

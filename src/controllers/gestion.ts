@@ -43,7 +43,7 @@ export async function crearUsuario(req: Request, res: Response) {
   }
 }
 
-export async function actualiarUsuario(req: Request, res: Response) {
+export async function actualizarUsuario(req: Request, res: Response) {
   try {
     const dataUser = matchedData(req);
 
@@ -100,28 +100,42 @@ export async function obtenerMesas(req: Request, res: Response) {
     }
 }
 
-export async function toggleEstadoMesa(req: Request, res: Response) {
-  try {
-    const data = req.params;
-    const id = <string>data.id;
+export async function crearMesa(req: Request, res: Response) {
+  try{
+    const dataMesa = matchedData(req);
 
-    const mesa = await prisma.mesa.findUnique({
-      where: { mesa_id: id }
-    })
+    const codigoAleatorio = generarCodigoMesa();
 
-    if (!mesa) return handleHttpError(res, "ID del mesa incorrecto", 404);
-
-    // Cambiar a nuevo estado
-    const nuevoEstado = mesa.estado === "Disponible" ? "Ocupada" : "Disponible";
-
-    await prisma.mesa.update({
-      where: { mesa_id: id},
-      data: { estado: nuevoEstado }
+    const newMesa = await prisma.mesa.create({
+      data: {
+        numero: dataMesa.numero,
+        codigo: codigoAleatorio
+      },
     });
 
-    res.status(200).json(mesa);
+    res.status(201).json(newMesa);
+  }catch(error){
+    return handleHttpError(res, "Error al crear el mesa", 500);
+  }
+}
+
+export async function actualizarMesa(req: Request, res: Response) {
+  try {
+    const dataMesa = matchedData(req);
+
+    const updatedMesa = await prisma.mesa.update({
+      where: { mesa_id: dataMesa.mesa_id },
+      data: {
+        numero: dataMesa.numero,
+        estado: dataMesa.estado
+      },
+    });
+
+    if(!updatedMesa) return handleHttpError(res, "ID de mesa incorrecto", 404)
+
+    res.status(200).json(updatedMesa);
   } catch (err) {
-    return handleHttpError(res, "Error al actualizar el estado de la mesa", 500)
+    return handleHttpError(res, "Error al actualizar mesa", 500)
   }
 }
 
@@ -129,10 +143,12 @@ export async function actualizarCodigoMesa(req: Request, res: Response) {
   try {
     const dataMesa = matchedData(req);
 
+    const codigoAleatorio = generarCodigoMesa();
+
     const updatedMesa = await prisma.mesa.update({
       where: { mesa_id: dataMesa.mesa_id },
       data: { 
-        codigo: dataMesa.codigo
+        codigo: codigoAleatorio
       }
     });
 
@@ -426,7 +442,20 @@ export async function subirFoto(req: Request, res: Response) {
 // Categorias
 export async function obtenerCategorias(req: Request, res: Response) {
     try {
-        const categorias = await prisma.categoria.findMany();
+        const categoriasRaw = await prisma.categoria.findMany({
+          include: {
+            _count: {
+              select: {
+                producto: true,
+              },
+            },
+          },
+        });
+
+        const categorias = categoriasRaw.map(cat => ({
+          ...cat,
+          count: cat._count.producto,
+        }));
         
         if(!categorias) return handleHttpError(res, "No hay categorias", 404)
 
@@ -499,7 +528,7 @@ export async function eliminarCategoria(req: Request, res: Response) {
             })
         ]);
 
-        return res.status(200).json({ success: true });
+        return res.status(200).json(categoria);
     } catch (err) {
         return handleHttpError(res, "Error al obtener mesas", 500)
     }
@@ -544,4 +573,14 @@ export async function eliminarFotoPorId(id: string) {
   });
 
   return true;
+}
+
+export function generarCodigoMesa(): string{
+  const numeros = Array.from({ length: 4 }, () =>
+    Math.floor(Math.random() * 10)
+  );
+
+  const codigo = numeros.join("").split("").join("");
+
+  return codigo;
 }
