@@ -4,10 +4,10 @@ import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { encrypt } from "../utils/handlePassword";
 import fs from 'fs';
-import path from 'path';
 const prisma = new PrismaClient()
 const MEDIA_PATH = `${__dirname}/../uploads`;
 const PUBLIC_URL = process.env.PUBLIC_URL;
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 // Usuarios
 export async function obteneUsuarios(req: Request, res: Response) {
@@ -94,7 +94,12 @@ export async function obtenerMesas(req: Request, res: Response) {
         
         if(!existingMesas) return handleHttpError(res, "No hay mesas", 404)
 
-        return res.status(200).json(existingMesas);
+      const mesasConQr = existingMesas.map(mesa => ({
+        ...mesa,
+        qr_url: `${FRONTEND_URL}/validate/${mesa.mesa_id}`
+      }));
+
+        return res.status(200).json(mesasConQr);
     } catch (err) {
         return handleHttpError(res, "Error al obtener mesas", 500)
     }
