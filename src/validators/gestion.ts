@@ -123,10 +123,6 @@ check("producto_id")
     .notEmpty().withMessage("La descripcion no puede estar vacía")
     .isLength({ max: 100 }).withMessage("La descripcion debe tener como máximo 100 caracteres"),
 
-  check("imagen_url")
-    .optional()
-    .isLength({ max: 200 }).withMessage("La url debe tener como máximo 100 caracteres"),
-
   check("categoria_id")
     .exists().withMessage("La categoria es requerida")
     .notEmpty().withMessage("La categoria no puede estar vacía")

@@ -233,8 +233,6 @@ export async function crearProducto(req: Request, res: Response) {
   try{
     const dataProducto = matchedData(req);
 
-    console.log(dataProducto);
-
     const newProduct = await prisma.producto.create({
       data: {
         nombre: dataProducto.nombre,
@@ -260,7 +258,6 @@ export async function actualiarProducto(req: Request, res: Response) {
       data: { 
         nombre: dataProducto.nombre,
         descripcion: dataProducto.descripcion,
-        imagen_url: dataProducto.imagen_url,
         categoria_id: dataProducto.categoria_id,
         precio_unitario: dataProducto.precio_unitario
       }
@@ -303,11 +300,16 @@ export async function toggleEstadoProducto(req: Request, res: Response) {
     // Cambiar a nuevo estado
     const nuevoEstado = producto.estado === "Activo" ? "Inactivo" : "Activo";
 
-    console.log(nuevoEstado);
+    if(nuevoEstado === "Inactivo"){
+      await prisma.producto
+    }
 
     const updatedProduct = await prisma.producto.update({
       where: { producto_id: id},
-      data: { estado: nuevoEstado }
+      data: { 
+        estado: nuevoEstado,
+        destacado: false
+      }
     });
 
     res.status(200).json(updatedProduct);
@@ -373,7 +375,10 @@ export async function eliminarProducto(req: Request, res: Response) {
     // Archivar producto (soft delete)
     await prisma.producto.update({
       where: { producto_id: id },
-      data: { is_archived: true }
+      data: { 
+        is_archived: true, 
+        destacado: false 
+      }
     });
 
     return res.status(200).json(producto);
