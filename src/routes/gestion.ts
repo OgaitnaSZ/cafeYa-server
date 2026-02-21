@@ -32,7 +32,7 @@ router.post("/usuario/crear", adminOnly, validator.validatorCrearUsuario, gestio
 router.put("/usuario", adminOnly, validator.validatorActualizarUsuario, gestion.actualizarUsuario);
 
 // Eliminar Usuario
-router.delete("usuario/eliminar/:id", validator.validatorId, gestion.eliminarUsuario);
+router.delete("/usuario/eliminar/:id", validator.validatorId, gestion.eliminarUsuario);
 
 /* --- MESAS --- */
 // Obtener Mesas
@@ -42,13 +42,13 @@ router.get("/mesa/mesas", encargadoOrAdmin, gestion.obtenerMesas);
 router.post("/mesa/crear", adminOnly, validator.validatorCrearMesa, gestion.crearMesa);
 
 // Actualizar Mesa
-router.put("/mesa", adminOnly, validator.validatorCrearMesa, gestion.actualizarMesa);
+router.put("/mesa", adminOnly, validator.validatorEditarMesa, gestion.actualizarMesa);
 
 // Actualizar codigo mesa
 router.patch("/mesa/codigo/:id", encargadoOrAdmin, validator.validatorId, gestion.actualizarCodigoMesa);
 
 // Eliminar Mesa
-router.delete("mesa/eliminar/:id", validator.validatorId, gestion.eliminarMesa);
+router.delete("/mesa/eliminar/:id", validator.validatorId, gestion.eliminarMesa);
 
 /* --- PEDIDOS --- */
 // Actualizar Estado Pedido

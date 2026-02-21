@@ -88,15 +88,13 @@ export async function eliminarUsuario(req: Request, res: Response) {
 // Mesas
 export async function obtenerMesas(req: Request, res: Response) {
     try {
-        const data = matchedData(req);
-    
-        const existingMesas = await prisma.mesa.findMany();
+        const existingMesas = await prisma.mesa.findMany({where:{is_archived: false}});
         
         if(!existingMesas) return handleHttpError(res, "No hay mesas", 404)
 
       const mesasConQr = existingMesas.map(mesa => ({
         ...mesa,
-        qr_url: `${FRONTEND_URL}/validate/${mesa.mesa_id}`
+        qr_url: `${FRONTEND_URL}validate/${mesa.mesa_id}`
       }));
 
         return res.status(200).json(mesasConQr);
@@ -127,7 +125,7 @@ export async function crearMesa(req: Request, res: Response) {
 export async function actualizarMesa(req: Request, res: Response) {
   try {
     const dataMesa = matchedData(req);
-
+    
     const updatedMesa = await prisma.mesa.update({
       where: { mesa_id: dataMesa.mesa_id },
       data: {
@@ -151,7 +149,7 @@ export async function actualizarCodigoMesa(req: Request, res: Response) {
     const codigoAleatorio = generarCodigoMesa();
 
     const updatedMesa = await prisma.mesa.update({
-      where: { mesa_id: dataMesa.mesa_id },
+      where: { mesa_id: dataMesa.id },
       data: { 
         codigo: codigoAleatorio
       }
