@@ -79,9 +79,6 @@ router.delete("/producto/eliminar/:id", validator.validatorId, gestion.eliminarP
 // Subir foto producto
 router.post("/producto/foto", uploadMiddleware, validator.validatorIdFoto, gestion.subirFoto);
 
-// Eliminar foto
-router.delete("foto/eliminar/:id", validator.validatorId, gestion.eliminarFoto);
-
 /* --- CATEGORIAS --- */
 // Obtener categorias
 router.get("/categoria/categorias", encargadoOrAdmin, gestion.obtenerCategorias);

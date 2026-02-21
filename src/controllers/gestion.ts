@@ -233,12 +233,13 @@ export async function crearProducto(req: Request, res: Response) {
   try{
     const dataProducto = matchedData(req);
 
+    console.log(dataProducto);
+
     const newProduct = await prisma.producto.create({
       data: {
         nombre: dataProducto.nombre,
         descripcion: dataProducto.descripcion,
-        imagen_url: dataProducto.imagen_url,
-        categoria: dataProducto.categoria,
+        categoria_id: dataProducto.categoria_id,
         precio_unitario: dataProducto.precio_unitario
       },
     });
@@ -397,6 +398,11 @@ export async function subirFoto(req: Request, res: Response) {
         });
         
         if (!existingProduct) return handleHttpError(res, "Producto no encontrado", 404)
+
+        // Si ya tiene imagen, eliminar la anterior
+        if (existingProduct.imagen_url) {
+          await eliminarFotoPorId(String(productoId));
+        }
         
         // Guardar en la db
         const data = await prisma.producto.update({
@@ -413,17 +419,6 @@ export async function subirFoto(req: Request, res: Response) {
     } catch (error) {
       return handleHttpError(res, "Error al subir foto", 500);
     }
-}
-
-// Eliminar foto
-export async function eliminarFoto(req: Request, res: Response){
-  try {
-    const id = req.params.id;
-    await eliminarFotoPorId(String(id));
-    res.status(200).json({ message: "Foto eliminada correctamente" });
-  } catch (err) {
-    return handleHttpError(res, "Error al intentar eliminar foto", 404);
-  }
 }
 
 // Categorias
