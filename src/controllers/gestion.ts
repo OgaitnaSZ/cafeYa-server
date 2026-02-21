@@ -412,10 +412,7 @@ export async function subirFoto(req: Request, res: Response) {
           }
         });
         
-        return res.status(201).send({ 
-          mensaje: `Foto subida con exito`, 
-          data
-        });
+        return res.status(201).send(data);
     } catch (error) {
       return handleHttpError(res, "Error al subir foto", 500);
     }
