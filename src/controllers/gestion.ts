@@ -177,7 +177,10 @@ export async function eliminarMesa(req: Request, res: Response) {
     // Archivar mesa (soft delete)
     await prisma.mesa.update({
       where: { mesa_id: id },
-      data: { is_archived: true }
+      data: { 
+        is_archived: true,
+        numero: null
+      }
     });
 
     return res.status(200).json({ message: "Mesa eliminada correctamente" });
