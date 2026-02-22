@@ -6,8 +6,22 @@ dotenv.config();
 import routes from "./routes/index";
 import path from 'path';
 import { Request, Response } from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { initializeSocket } from "./sockets/socketManager";
 
 const app = express();
+const httpServer = createServer(app);
+
+// Configurar Socket.IO con CORS
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:4200",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+initializeSocket();
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -44,10 +58,10 @@ app.get('/test', (req: Request, res:Response) => {
 
 app.use("/api", routes);
 
+export { io };
+
 const port = process.env.PORT || 4001;
 const NODE_ENV = process.env.NODE_ENV;
-if(NODE_ENV !== 'test' && NODE_ENV !== 'production') app.listen(port, ()=>{
-    console.log("Running in: ", process.env.PUBLIC_URL);
-});
+if(NODE_ENV !== 'test' && NODE_ENV !== 'production') httpServer.listen(port, () => {});
 
 export default app;
