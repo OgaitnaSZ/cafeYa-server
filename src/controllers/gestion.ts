@@ -12,11 +12,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL;
 // Usuarios
 export async function obteneUsuarios(req: Request, res: Response) {
     try {
-        const existingUsers = await prisma.usuario.findMany();
+        const existingUsers = await prisma.usuario.findMany({where: {is_archived: 0}});
         
         if(!existingUsers) return handleHttpError(res, "No hay usuarios", 404)
 
-        return res.status(200).json(existingUsers);
+        // Eliminar el atributo password de cada usuario
+        const usersWithoutPassword = existingUsers.map(({ password, ...user }) => user);
+
+        return res.status(200).json(usersWithoutPassword);
     } catch (err) {
         return handleHttpError(res, "Error al obtener usuarios", 500)
     }
@@ -33,13 +36,13 @@ export async function crearUsuario(req: Request, res: Response) {
         nombre: dataUser.nombre,
         email: dataUser.email,
         password: hashedPassword,
-        rol: dataUser.rol,
+        rol: dataUser.rol
       },
     });
 
     res.status(201).json(newUser);
   }catch(error){
-    return handleHttpError(res, "Error al crear el producto", 500);
+    return handleHttpError(res, "Error al crear el usuario", 500);
   }
 }
 
@@ -73,24 +76,39 @@ export async function actualizarUsuario(req: Request, res: Response) {
 }
 
 export async function eliminarUsuario(req: Request, res: Response) {
-    try {
-        const data = req.params;
-        const id = <string>data.id;
+  try {
+      const data = req.params;
+      const id = <string>data.id;
 
-        const user = await prisma.usuario.findUnique({
-          where: { id }
-        })
+      const user = await prisma.usuario.findUnique({
+        where: { id }
+      });
+      
+      if (!user) return handleHttpError(res, "ID del usuario incorrecto", 404);
 
-        if (!user) return handleHttpError(res, "ID del usuario incorrecto", 404);
+      if (user.rol === "admin" && user.is_archived === 0) {
+        const activeAdminsCount = await prisma.usuario.count({
+          where: {
+            rol: "admin",
+            is_archived: 0
+          }
+        });
+  
+        if (activeAdminsCount === 1) return handleHttpError(res, "No se puede eliminar al único administrador", 400);
+      }
 
-        await prisma.usuario.delete({
-          where: { id }
-        })
+      // Archivar usuario (soft delete)
+      await prisma.usuario.update({
+        where: { id },
+        data: { 
+          is_archived: 1
+        }
+      });
 
-        return res.status(200).json({ success: true });
-    } catch (err) {
-        return handleHttpError(res, "Error al obtener mesas", 500)
-    }
+      return res.status(200).json({ success: true });
+  } catch (err) {
+      return handleHttpError(res, "Error al eliminar usuarios", 500)
+  }
 }
 
 // Mesas

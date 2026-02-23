@@ -45,7 +45,7 @@ export const validatorActualizarUsuario = [
     .isLength({ max: 30 }).withMessage("El email debe tener como máximo 30 caracteres"),
 
   check("password")
-    .optional()
+    .optional({ checkFalsy: true })
     .isLength({ min: 5, max: 20 })
     .withMessage("Password debe tener entre 5 y 20 caracteres"),
 
