@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pedido_estado, PrismaClient } from "@prisma/client";
+import { pedido_estado, Prisma, PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { encrypt } from "../utils/handlePassword";
@@ -564,6 +564,75 @@ export async function eliminarCategoria(req: Request, res: Response) {
     } catch (err) {
         return handleHttpError(res, "Error al obtener mesas", 500)
     }
+}
+
+// Clientes
+export async function obtenerClientes(req: Request, res: Response) {
+  try {
+    const clientes = await prisma.cliente.findMany({
+      include: {
+        _count: {
+          select: { pedido: true }
+        },
+        pedido: {
+          select: {
+            precio_total: true,
+            created_at: true
+          },
+          orderBy: { created_at: 'desc' }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    // Calcular stats
+    const clientesConStats = clientes.map(cliente => {
+      const total_gastado = cliente.pedido.reduce( (sum, p) => sum.add(p.precio_total), new Prisma.Decimal(0) );
+      const ultimo_pedido = cliente.pedido.length > 0 ? cliente.pedido[0]!.created_at : null;
+
+      return {
+        cliente_id: cliente.cliente_id,
+        nombre: cliente.nombre,
+        email: cliente.email,
+        telefono: cliente.telefono,
+        duracion_minutos: cliente.duracion_minutos,
+        created_at: cliente.created_at,
+        _count: {
+          pedidos: cliente._count.pedido
+        },
+        total_gastado,
+        ultimo_pedido
+      };
+    });
+
+    res.status(200).json(clientesConStats);
+  } catch (error) {
+    handleHttpError(res, "Error al obtener clientes", 500);
+  }
+}
+
+export async function eliminarCliente(req: Request, res: Response) {
+  try {
+    const { id } = matchedData(req);
+
+    // Verificar si tiene pedidos
+    const cliente = await prisma.cliente.findUnique({
+      where: { cliente_id: id },
+      include: { _count: { select: { pedido: true } } }
+    });
+
+    if (!cliente) return handleHttpError(res, "Cliente no encontrado", 404);
+
+    if (cliente._count.pedido > 0) {
+      return handleHttpError(res, `No se puede eliminar. El cliente tiene ${cliente._count.pedido} pedido(s) asociado(s)`,400);
+    }
+
+    await prisma.cliente.delete({ where: { cliente_id: id }});
+
+    res.status(200).json({ message: "Cliente eliminado" });
+  } catch (error) {
+    handleHttpError(res, "Error al eliminar cliente", 500);
+  }
 }
 
 // Calificaciones

@@ -95,6 +95,13 @@ router.put("/categoria/editar", adminOnly, validator.validatorActualizarCategori
 // Eliminar categoria
 router.delete("/categoria/eliminar/:id", validator.validatorIdInt, gestion.eliminarCategoria);
 
+/* --- CLIENTES --- */
+// Obtener clientes
+router.get("/cliente/clientes", encargadoOrAdmin, gestion.obtenerClientes);
+
+// Eliminar clientes
+router.delete("/cliente/eliminar/:id", validator.validatorIdInt, gestion.eliminarCliente);
+
 /* --- CALIFICACIONES --- */
 // Obtener calificaciones
 router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);
