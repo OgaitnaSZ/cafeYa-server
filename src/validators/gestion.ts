@@ -1,4 +1,4 @@
-import { check, param } from "express-validator";
+import { check, param, query } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { validateResults } from "../utils/handleValidator";
 import { mesa_estado, pedido_estado } from "@prisma/client";
@@ -81,6 +81,30 @@ export const validatorEditarMesa = [
     .isIn(Object.values(mesa_estado))
     .withMessage("El estado no es válido"),
     
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
+
+export const validatorPedidosFiltro = [
+    query("cliente_id")
+    .optional({ checkFalsy: true })
+    .isUUID(),
+
+    query("mesa_id")
+    .optional({ checkFalsy: true })
+    .isUUID(),
+
+    query("estado")
+    .optional({ checkFalsy: true })
+    .isIn(Object.values(pedido_estado)),
+
+    query("fecha_desde")
+    .optional({ checkFalsy: true })
+    .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
+
+    query("search")
+    .optional({ checkFalsy: true })
+    .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
+
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 

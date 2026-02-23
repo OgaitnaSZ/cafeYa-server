@@ -217,6 +217,76 @@ export async function eliminarMesa(req: Request, res: Response) {
 }
 
 // Pedidos
+// Obtener pedidos
+export async function obtenerPedidos(req: Request, res: Response) {
+try {
+    const { cliente_id, mesa_id, estado, fecha_desde, fecha_hasta, search } = req.query;
+    
+    const where: any = {};
+
+    if (cliente_id) {
+      where.cliente_id = cliente_id;
+    }
+
+    if (mesa_id) {
+      where.mesa_id = mesa_id;
+    }
+
+    if (estado && estado !== 'todos') {
+      where.estado = estado;
+    }
+
+    if (fecha_desde || fecha_hasta) {
+      where.fecha_creacion = {
+        ...(fecha_desde && { gte: fecha_desde }),
+        ...(fecha_hasta && { lte: fecha_hasta }),
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { notas: { contains: search, mode: 'insensitive' } },
+        { codigo_referencia: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    // 3. Ejecutar la consulta
+    const pedidos = await prisma.pedido.findMany({
+      where,
+      orderBy: {
+        created_at: 'desc'
+      },
+      include: {
+        cliente: true,
+        mesa: true
+      }
+    });
+
+    return res.status(200).json(pedidos);
+
+  } catch (err) {
+    console.error(err);
+    return handleHttpError(res, "Error al obtener pedidos", 500);
+  }
+}
+
+// Obtener pedido
+export async function obtenerPedido(req: Request, res: Response) {
+  try {
+      const dataPedido = matchedData(req);
+  
+      const existingPedido = await prisma.pedido.findUnique({
+          where: { pedido_id: dataPedido.id }
+      });
+        
+      if(!existingPedido) return handleHttpError(res, "Pedido no existente", 404)
+
+      return res.status(200).json(existingPedido);
+  } catch (err) {
+    return handleHttpError(res, "Error al validar id del pedido", 500)
+  }
+}
+
 // Actualizar estado de pedido
 export async function actualizarEstadoPedido(req: Request, res: Response) {
   try {

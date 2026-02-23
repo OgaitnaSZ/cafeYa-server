@@ -51,14 +51,17 @@ router.patch("/mesa/codigo/:id", encargadoOrAdmin, validator.validatorId, gestio
 router.delete("/mesa/eliminar/:id", validator.validatorId, gestion.eliminarMesa);
 
 /* --- PEDIDOS --- */
+// Obtener pedidos
+router.get("/pedido/pedidos", encargadoOrAdmin, validator.validatorPedidosFiltro, gestion.obtenerPedidos);
+
+// Obtener pedido
+router.get("/pedido/pedido/:id", encargadoOrAdmin, validator.validatorId, gestion.obtenerPedido);
+
 // Actualizar Estado Pedido
 router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
 
 // Obtener Pedidos Activos
 router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
-
-//Obtener Pedidos Por Mesa
-router.get("/mesa/:id/pedidos", adminOnly, validator.validatorId, gestion.obtenerPedidosPorMesa);
 
 /* --- PRODUCTOS --- */
 // Crear productos
