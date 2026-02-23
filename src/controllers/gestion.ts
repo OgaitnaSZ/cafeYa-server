@@ -47,13 +47,21 @@ export async function actualizarUsuario(req: Request, res: Response) {
   try {
     const dataUser = matchedData(req);
 
+    const dataToUpdate: any = {
+      nombre: dataUser.nombre,
+      email: dataUser.email,
+      rol: dataUser.rol,
+    };
+
+
+    if (dataUser.password) {
+      const hashedPassword = await encrypt(dataUser.password);
+      dataToUpdate.password = hashedPassword;
+    }
+
     const updatedUser = await prisma.usuario.update({
       where: { id: dataUser.id },
-      data: {
-        nombre: dataUser.nombre,
-        email: dataUser.email,
-        rol: dataUser.rol,
-      },
+      data: dataToUpdate
     });
 
     if(!updatedUser) return handleHttpError(res, "ID de usuario incorrecto", 404)

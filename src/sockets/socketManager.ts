@@ -1,89 +1,84 @@
 import { Server, Socket } from "socket.io";
 import { io } from "../app";
-import { usuario_rol } from "@prisma/client";
 
-interface SocketData {
-  userId?: string;
-  userRole?: usuario_rol;
-  mesaId?: string;
-  sesionId?: string;
+interface ClienteConectado {
+  socketId: string;
+  userId: string;
+  userName: string;
+  mesaId: string;
+  mesaNumero: number;
+  connectedAt: Date;
 }
 
-// Mapa de conexiones activas
-const connectedClients = new Map<string, Socket & { data: SocketData }>();
-const connectedAdmins = new Map<string, Socket & { data: SocketData }>();
+// Mapa simple de clientes conectados
+const connectedClients = new Map<string, ClienteConectado>();
+const connectedAdmins = new Set<string>();
 
 // Inicializar Socket.IO
 export function initializeSocket() {
-  io.on("connection", (socket: Socket & { data: SocketData }) => {
-    console.log(`Cliente conectado: ${socket.id}`);
+  io.on("connection", (socket: Socket) => {
+    console.log(`✅ Socket conectado: ${socket.id}`);
 
-    // Autenticación inicial
+    // Autenticación
     socket.on("authenticate", (data: { 
-      userId: string, 
+      userId: string,
+      userName: string,
       userRole: 'cliente' | 'admin' | 'encargado' | 'cocina',
       mesaId?: string,
-      sesionId?: string 
+      mesaNumero?: number,
+      token?: string
     }) => {
-      socket.data = data;
-
       if (data.userRole === 'cliente') {
-        connectedClients.set(socket.id, socket);
-        
-        // Unirse a room de la mesa
-        if (data.mesaId) {
-          socket.join(`mesa-${data.mesaId}`);
-          console.log(`Cliente ${data.userId} unido a mesa-${data.mesaId}`);
-        }
-
-        // Notificar a admins que hay una nueva conexión
-        io.to('admin-room').emit('cliente:conectado', {
+        // Guardar cliente conectado
+        const clienteData: ClienteConectado = {
           socketId: socket.id,
           userId: data.userId,
-          mesaId: data.mesaId,
-          sesionId: data.sesionId,
-          timestamp: new Date()
-        });
+          userName: data.userName,
+          mesaId: data.mesaId!,
+          mesaNumero: data.mesaNumero!,
+          connectedAt: new Date()
+        };
+        
+        connectedClients.set(socket.id, clienteData);
+        
+        // Unirse a room de la mesa
+        socket.join(`mesa-${data.mesaId}`);
+        console.log(`👤 Cliente ${data.userName} (${data.userId}) → Mesa ${data.mesaNumero}`);
+
+        // Notificar a admins
+        io.to('admin-room').emit('cliente:conectado', clienteData);
 
       } else if (['admin', 'encargado', 'cocina'].includes(data.userRole)) {
-        connectedAdmins.set(socket.id, socket);
+        // Admin conectado
+        connectedAdmins.add(socket.id);
         socket.join('admin-room');
-        console.log(`Admin ${data.userId} conectado`);
+        console.log(`👨‍💼 Admin/Staff conectado: ${socket.id}`);
 
-        // Enviar lista de clientes conectados
-        const clientesConectados = Array.from(connectedClients.values()).map(s => ({
-          socketId: s.id,
-          userId: s.data.userId,
-          mesaId: s.data.mesaId,
-          sesionId: s.data.sesionId
-        }));
-        
-        socket.emit('admin:clientes-conectados', clientesConectados);
+        // Enviar lista de clientes conectados al admin
+        const clientesArray = Array.from(connectedClients.values());
+        socket.emit('admin:clientes-conectados', clientesArray);
       }
 
       // Confirmar autenticación
       socket.emit('authenticated', { 
         success: true, 
-        role: data.userRole 
+        role: data.userRole,
+        socketId: socket.id
       });
     });
 
     // Desconexión
     socket.on("disconnect", () => {
-      console.log(`Cliente desconectado: ${socket.id}`);
+      console.log(`❌ Socket desconectado: ${socket.id}`);
 
       // Si era un cliente
-      if (connectedClients.has(socket.id)) {
-        const clientSocket = connectedClients.get(socket.id)!;
+      const clienteData = connectedClients.get(socket.id);
+      if (clienteData) {
+        console.log(`👤 Cliente desconectado: ${clienteData.userName} - Mesa ${clienteData.mesaNumero}`);
         
         // Notificar a admins
-        io.to('admin-room').emit('cliente:desconectado', {
-          socketId: socket.id,
-          userId: clientSocket.data.userId,
-          mesaId: clientSocket.data.mesaId,
-          timestamp: new Date()
-        });
-
+        io.to('admin-room').emit('cliente:desconectado', clienteData);
+        
         connectedClients.delete(socket.id);
       }
 
@@ -93,31 +88,33 @@ export function initializeSocket() {
       }
     });
 
-    // Ping-pong para mantener conexión
+    // Ping-pong
     socket.on("ping", () => {
       socket.emit("pong");
     });
   });
 }
 
-// Funciones helper para emitir eventos
+// Helper functions para emitir eventos
 export function emitToMesa(mesaId: string, event: string, data: any) {
   io.to(`mesa-${mesaId}`).emit(event, data);
+  console.log(`📤 Evento "${event}" enviado a mesa-${mesaId}`);
 }
 
 export function emitToAdmins(event: string, data: any) {
   io.to('admin-room').emit(event, data);
+  console.log(`📤 Evento "${event}" enviado a admins`);
 }
 
 export function emitToCliente(socketId: string, event: string, data: any) {
   io.to(socketId).emit(event, data);
+  console.log(`📤 Evento "${event}" enviado a ${socketId}`);
 }
 
 export function getConnectedClients() {
-  return Array.from(connectedClients.values()).map(s => ({
-    socketId: s.id,
-    userId: s.data.userId,
-    mesaId: s.data.mesaId,
-    sesionId: s.data.sesionId
-  }));
+  return Array.from(connectedClients.values());
+}
+
+export function getClientesByMesa(mesaId: string) {
+  return Array.from(connectedClients.values()).filter(c => c.mesaId === mesaId);
 }

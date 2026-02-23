@@ -115,13 +115,14 @@ model producto {
 }
 
 model usuario {
-  id         String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  nombre     String      @db.VarChar(255)
-  email      String      @unique(map: "email") @db.VarChar(255)
-  password   String      @db.VarChar(255)
-  rol        usuario_rol
-  created_at DateTime    @default(now()) @db.Timestamp(0)
-  updated_at DateTime    @default(now()) @db.Timestamp(0)
+  id          String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  nombre      String      @db.VarChar(255)
+  email       String      @unique(map: "email") @db.VarChar(255)
+  password    String      @db.VarChar(255)
+  rol         usuario_rol
+  created_at  DateTime    @default(now()) @db.Timestamp(0)
+  updated_at  DateTime    @default(now()) @db.Timestamp(0)
+  is_archived Int?        @default(0) @db.TinyInt
 }
 
 model categoria {
