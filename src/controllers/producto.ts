@@ -7,7 +7,13 @@ const prisma = new PrismaClient()
 // Obtener Productos
 export async function obtenerProductos(req: Request, res: Response) {
     try {
-        const existingProducts = await prisma.producto.findMany();
+        const existingProducts = await prisma.producto.findMany({
+            where: {
+                is_archived: false,
+                estado: 'Activo',
+                stock: { gt: 0 }
+            }
+        });
 
         if (existingProducts.length === 0) return handleHttpError(res, "No hay productos coincidentes", 404)
 

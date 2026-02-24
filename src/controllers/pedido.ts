@@ -60,6 +60,19 @@ export async function crearPedido(req: Request, res: Response) {
         where: { pedido_id: pedido.pedido_id }
       });
 
+      await Promise.all(
+        dataPedido.productos.map((p: any) =>
+          tx.producto.update({
+            where: { producto_id: p.producto.producto_id },
+            data: {
+              stock: {
+                decrement: p.cantidad
+              }
+            }
+          })
+        )
+      );
+
       return { pedido, productos };
     });
 

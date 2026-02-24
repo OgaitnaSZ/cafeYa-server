@@ -249,8 +249,7 @@ try {
         { codigo_referencia: { contains: search, mode: 'insensitive' } }
       ];
     }
-
-    // 3. Ejecutar la consulta
+    
     const pedidos = await prisma.pedido.findMany({
       where,
       orderBy: {
