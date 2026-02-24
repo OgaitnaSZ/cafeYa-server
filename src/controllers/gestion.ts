@@ -331,7 +331,7 @@ export async function obtenerPedidosActivos(req: Request, res: Response) {
         const existingPedido = await prisma.pedido.findMany({
             where:{
                 estado: {
-                    not: pedido_estado.Entregado
+                  not: pedido_estado.Entregado
                 }
             }
         });

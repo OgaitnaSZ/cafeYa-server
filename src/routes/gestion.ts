@@ -61,7 +61,7 @@ router.get("/pedido/pedido/:id", encargadoOrAdmin, validator.validatorId, gestio
 router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
 
 // Obtener Pedidos Activos
-router.get("/pedidos/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
+router.get("/pedido/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
 
 /* --- PRODUCTOS --- */
 // Crear productos
