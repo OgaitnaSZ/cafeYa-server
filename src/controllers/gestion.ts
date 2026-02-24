@@ -718,6 +718,58 @@ export async function obtenerCalificaciones(req: Request, res: Response) {
     }
 }
 
+// Pagos
+export async function obtenerPagos(req: Request, res: Response) {
+  try {
+    const { pedido_id, medio_de_pago, fecha_desde, fecha_hasta } = req.query;
+
+    let whereClause: any = {};
+
+    if (pedido_id) {
+      whereClause.pedido_id = pedido_id as string;
+    }
+
+    if (medio_de_pago) {
+      whereClause.medio_de_pago = medio_de_pago as string;
+    }
+
+    if (fecha_desde || fecha_hasta) {
+      whereClause.created_at = {};
+      if (fecha_desde) {
+        whereClause.created_at.gte = new Date(fecha_desde as string);
+      }
+      if (fecha_hasta) {
+        whereClause.created_at.lte = new Date(fecha_hasta as string);
+      }
+    }
+
+    const pagos = await prisma.pago.findMany({
+      where: whereClause,
+      include: {
+        pedido: {
+          select: {
+            pedido_id: true,
+            numero_pedido: true,
+            nombre_cliente: true,
+            precio_total: true,
+            estado: true,
+            mesa: {
+              select: {
+                numero: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    res.status(200).json(pagos);
+  } catch (error) {
+    handleHttpError(res, "Error al obtener pagos", 500);
+  }
+}
+
 // Utils
 export async function eliminarFotoPorId(id: string) {
   const producto = await prisma.producto.findUnique({

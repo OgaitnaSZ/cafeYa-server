@@ -1,7 +1,7 @@
 import { check, param, query } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { validateResults } from "../utils/handleValidator";
-import { mesa_estado, pedido_estado } from "@prisma/client";
+import { mesa_estado, pago_medio_de_pago, pedido_estado } from "@prisma/client";
 
 export const validatorCrearUsuario = [
   check("nombre")
@@ -206,7 +206,27 @@ export const validatorActualizarCategoria = [
     .isInt({ min: 0}).withMessage("El valor debe ser entero positivo"),
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
-]
+];
+
+export const validatorPagosFiltro = [
+    query("pedido_id")
+    .optional({ checkFalsy: true })
+    .isUUID(),
+
+    query("medio_de_pago")
+    .optional({ checkFalsy: true })
+    .isIn(Object.values(pago_medio_de_pago)),
+
+    query("fecha_desde")
+    .optional({ checkFalsy: true })
+    .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
+
+    query("fecha_hasta")
+    .optional({ checkFalsy: true })
+    .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];
 
 export const validatorId = [
     param("id")

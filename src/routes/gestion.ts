@@ -103,7 +103,11 @@ router.delete("/categoria/eliminar/:id", validator.validatorIdInt, gestion.elimi
 router.get("/cliente/clientes", encargadoOrAdmin, gestion.obtenerClientes);
 
 // Eliminar clientes
-router.delete("/cliente/eliminar/:id", validator.validatorIdInt, gestion.eliminarCliente);
+router.delete("/cliente/eliminar/:id", validator.validatorId, gestion.eliminarCliente);
+
+/* --- PEDIDOS --- */
+// Obtener pagos
+router.get("/pago/pagos", encargadoOrAdmin, validator.validatorPagosFiltro, gestion.obtenerPagos);
 
 /* --- CALIFICACIONES --- */
 // Obtener calificaciones
