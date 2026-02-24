@@ -707,15 +707,59 @@ export async function eliminarCliente(req: Request, res: Response) {
 // Calificaciones
 // Obtener calificaciones
 export async function obtenerCalificaciones(req: Request, res: Response) {
-    try {
-        const calificaciones = await prisma.calificacion.findMany();
-        
-        if(!calificaciones) return handleHttpError(res, "No hay calificaciones", 404)
+  try {
+    const { pedido_id, fecha_desde, fecha_hasta, search, puntuacion } = req.query;
 
-        return res.status(200).json(calificaciones);
-    } catch (err) {
-        return handleHttpError(res, "Error al obtener calificaciones", 500)
+    let whereClause: any = {};
+
+    if (pedido_id) {
+      whereClause.pedido_id = pedido_id as string;
     }
+
+    if (puntuacion) {
+      whereClause.puntuacion = parseInt(puntuacion as string);
+    }
+
+    if (search) {
+      whereClause.nombre_cliente = {
+        contains: search as string,
+        mode: 'insensitive'
+      };
+    }
+
+    if (fecha_desde || fecha_hasta) {
+      whereClause.created_at = {};
+      if (fecha_desde) {
+        whereClause.created_at.gte = new Date(fecha_desde as string);
+      }
+      if (fecha_hasta) {
+        whereClause.created_at.lte = new Date(fecha_hasta as string);
+      }
+    }
+
+    const calificaciones = await prisma.calificacion.findMany({
+      where: whereClause,
+      include: {
+        pedido: {
+          select: {
+            pedido_id: true,
+            numero_pedido: true,
+            precio_total: true,
+            mesa: {
+              select: {
+                numero: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    res.status(200).json(calificaciones);
+  } catch (error) {
+    handleHttpError(res, "Error al obtener calificaciones", 500);
+  }
 }
 
 // Pagos
