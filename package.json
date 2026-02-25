@@ -27,11 +27,13 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "path": "^0.12.7",
+    "pdfkit": "^0.17.2",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.10",
+    "@types/pdfkit": "^0.17.5",
     "@types/socket.io": "^3.0.1",
     "nodemon": "^3.1.11",
     "prisma": "^6.19.2",

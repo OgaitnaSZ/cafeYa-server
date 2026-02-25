@@ -105,9 +105,12 @@ router.get("/cliente/clientes", encargadoOrAdmin, gestion.obtenerClientes);
 // Eliminar clientes
 router.delete("/cliente/eliminar/:id", validator.validatorId, gestion.eliminarCliente);
 
-/* --- PEDIDOS --- */
+/* --- PAGOS --- */
 // Obtener pagos
 router.get("/pago/pagos", encargadoOrAdmin, validator.validatorPagosFiltro, gestion.obtenerPagos);
+
+// Generar recibo
+router.get("/pago/pagos/:id/recibo", encargadoOrAdmin, validator.validatorId, gestion.generarRecibo);
 
 /* --- CALIFICACIONES --- */
 // Obtener calificaciones
