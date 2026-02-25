@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { pedido_estado, Prisma, PrismaClient } from "@prisma/client";
-import PDFDocument from 'pdfkit';
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { encrypt } from "../utils/handlePassword";
@@ -812,119 +811,6 @@ export async function obtenerPagos(req: Request, res: Response) {
     res.status(200).json(pagos);
   } catch (error) {
     handleHttpError(res, "Error al obtener pagos", 500);
-  }
-}
-
-// Generar recibo
-export async function generarRecibo(req: Request, res: Response) {
-  try {
-    const data = req.params;
-    const id = <string>data.id;
-    
-    const pago = await prisma.pago.findUnique({
-      where: { pago_id: id },
-      include: {
-        pedido: {
-          include: {
-            cliente: true,
-            mesa: true,
-            pedido_producto: {
-              include: { producto: true }
-            }
-          }
-        }
-      }
-    });
-
-    if (!pago) return handleHttpError(res, "Pago no encontrado", 404);
-
-    const { pedido } = pago;
-
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="recibo-${pedido.numero_pedido}.pdf"`);
-    doc.pipe(res);
-
-    // ── ENCABEZADO ──────────────────────────────────────────
-    doc.fontSize(20).font('Helvetica-Bold').text('CAFETERÍA', { align: 'center' });
-    doc.fontSize(10).font('Helvetica').text('Tu dirección aquí', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.5);
-
-    // ── DATOS DEL PEDIDO ────────────────────────────────────
-    doc.fontSize(10);
-    doc.text(`Pedido N°: ${pedido.numero_pedido}`, { continued: true });
-    doc.text(`Fecha: ${pago.created_at.toLocaleDateString('es-AR')}`, { align: 'right' });
-
-    doc.text(`Cliente: ${pedido.nombre_cliente}`, { continued: true });
-    doc.text(`Mesa: ${pedido.mesa.numero}`, { align: 'right' });
-
-    doc.text(`Medio de pago: ${pago.medio_de_pago}`);
-    if (pedido.nota) doc.text(`Nota: ${pedido.nota}`);
-
-    doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.5);
-
-    // ── TABLA DE PRODUCTOS ──────────────────────────────────
-    const colProducto = 50;
-    const colCantidad = 300;
-    const colPrecioU  = 370;
-    const colSubtotal = 460;
-
-    doc.font('Helvetica-Bold');
-    doc.text('Producto',    colProducto, doc.y);
-    doc.text('Cant.',       colCantidad, doc.y - doc.currentLineHeight(), { width: 60, align: 'right' });
-    doc.text('P. Unit.',    colPrecioU,  doc.y - doc.currentLineHeight(), { width: 70, align: 'right' });
-    doc.text('Subtotal',    colSubtotal, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-    doc.moveDown(0.3);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.3);
-
-    doc.font('Helvetica');
-    for (const item of pedido.pedido_producto) {
-      const subtotal = item.cantidad * Number(item.precio_unitario);
-      const y = doc.y;
-
-      doc.text(item.producto.nombre,                    colProducto, y, { width: 240 });
-      doc.text(String(item.cantidad),                   colCantidad, y, { width: 60,  align: 'right' });
-      doc.text(`$${Number(item.precio_unitario).toFixed(2)}`, colPrecioU, y, { width: 70, align: 'right' });
-      doc.text(`$${subtotal.toFixed(2)}`,               colSubtotal, y, { width: 80, align: 'right' });
-      doc.moveDown(0.5);
-    }
-
-    // ── TOTALES ─────────────────────────────────────────────
-    doc.moveDown(0.3);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.5);
-
-    const rightCol = 380;
-    const valueCol = 460;
-
-    doc.font('Helvetica');
-    doc.text('Subtotal:',  rightCol, doc.y, { width: 80, align: 'right' });
-    doc.text(`$${Number(pago.monto).toFixed(2)}`, valueCol, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-    doc.moveDown(0.5);
-
-    doc.text('IVA:',       rightCol, doc.y, { width: 80, align: 'right' });
-    doc.text(`$${Number(pago.IVA).toFixed(2)}`, valueCol, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold');
-    doc.text('TOTAL:',     rightCol, doc.y, { width: 80, align: 'right' });
-    doc.text(`$${Number(pago.monto_final).toFixed(2)}`, valueCol, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-
-    // ── PIE ─────────────────────────────────────────────────
-    doc.moveDown(2);
-    doc.font('Helvetica').fontSize(9).text('¡Gracias por tu visita!', { align: 'center' });
-
-    doc.end();
-
-  } catch (error) {
-    console.error(error);
-    handleHttpError(res, "Error al generar recibo", 500);
   }
 }
 
