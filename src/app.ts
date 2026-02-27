@@ -16,7 +16,10 @@ const httpServer = createServer(app);
 // Configurar Socket.IO con CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:4200",
+    origin: [
+      process.env.FRONTEND_URL || "http://localhost:4200",
+      "http://localhost:4201"
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -28,7 +31,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const allowedOrigins: string[] = [
   process.env.FRONTEND_URL || '',
-  'http://localhost:4200'
+  'http://localhost:4200', // client
+  'http://localhost:4201'  // admin
 ];
 
 const corsOptions: CorsOptions = {
