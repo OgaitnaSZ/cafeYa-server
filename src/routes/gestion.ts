@@ -113,4 +113,8 @@ router.get("/pago/pagos", encargadoOrAdmin, validator.validatorPagosFiltro, gest
 // Obtener calificaciones
 router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);
 
+/* --- PEDIDOS --- */
+// Obtener dashboard
+router.get("/dashboard", adminOnly, gestion.obtenerDashboard);
+
 export { router };

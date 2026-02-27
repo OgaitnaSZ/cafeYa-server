@@ -814,6 +814,264 @@ export async function obtenerPagos(req: Request, res: Response) {
   }
 }
 
+// Analiticas
+export async function obtenerDashboard(req: Request, res: Response) {
+  try {
+    const hoy  = getArgentinaDay(0);
+    const ayer = getArgentinaDay(-1);
+
+    const whereHoy  = { created_at: { gte: hoy.start,  lte: hoy.end  } };
+    const whereAyer = { created_at: { gte: ayer.start, lte: ayer.end } };
+
+    const [
+      // Pagos hoy / ayer (para recaudado)
+      pagosHoy,
+      pagosAyer,
+
+      // Pedidos hoy / ayer (conteo + activos)
+      pedidosHoy,
+      pedidosAyer,
+
+      // Mesas
+      mesas,
+
+      // Top productos hoy
+      topProductos,
+
+      // Calificaciones hoy
+      calificacionesHoy,
+      calificacionesRecientes,
+    ] = await Promise.all([
+
+      // Pagos hoy
+      prisma.pago.findMany({
+        where: whereHoy,
+        select: { monto_final: true, medio_de_pago: true },
+      }),
+
+      // Pagos ayer
+      prisma.pago.findMany({
+        where: whereAyer,
+        select: { monto_final: true },
+      }),
+
+      // Pedidos hoy (incluye activos con detalle)
+      prisma.pedido.findMany({
+        where: {
+          ...whereHoy,
+          pedido_padre: null, // excluir sub-pedidos si aplica
+        },
+        select: {
+          pedido_id: true,
+          numero_pedido: true,
+          nombre_cliente: true,
+          precio_total: true,
+          estado: true,
+          created_at: true,
+          mesa: { select: { numero: true } },
+          pedido_producto: {
+            select: {
+              cantidad: true,
+              producto: { select: { nombre: true } },
+            },
+          },
+        },
+        orderBy: { created_at: "desc" },
+      }),
+
+      // Pedidos ayer (solo conteo)
+      prisma.pedido.count({
+        where: { ...whereAyer, pedido_padre: null },
+      }),
+
+      // Mesas con pedido activo
+      prisma.mesa.findMany({
+        where: { is_archived: false },
+        select: {
+          mesa_id: true,
+          numero: true,
+          estado: true,
+          pedido: {
+            where: {
+              estado: { in: ["Pendiente", "En_preparacion", "Listo"] },
+            },
+            orderBy: { created_at: "desc" },
+            take: 1,
+            select: {
+              numero_pedido: true,
+              nombre_cliente: true,
+              precio_total: true,
+              estado: true,
+              created_at: true,
+            },
+          },
+        },
+        orderBy: { numero: "asc" },
+      }),
+
+      // Top 5 productos del día
+      prisma.pedido_producto.groupBy({
+        by: ["producto_id"],
+        where: {
+          pedido: whereHoy,
+        },
+        _sum: { cantidad: true },
+        orderBy: { _sum: { cantidad: "desc" } },
+        take: 5,
+      }),
+
+      // Calificaciones hoy (para promedio)
+      prisma.calificacion.findMany({
+        where: whereHoy,
+        select: { puntuacion: true },
+      }),
+
+      // Últimas 5 calificaciones del día
+      prisma.calificacion.findMany({
+        where: whereHoy,
+        select: {
+          nombre_cliente: true,
+          puntuacion: true,
+          resena: true,
+          created_at: true,
+          pedido: { select: { numero_pedido: true } },
+        },
+        orderBy: { created_at: "desc" },
+        take: 5,
+      }),
+    ]);
+
+    // Nombres de productos del top
+    const productosIds = topProductos.map((p) => p.producto_id);
+    const productosInfo = await prisma.producto.findMany({
+      where: { producto_id: { in: productosIds } },
+      select: { producto_id: true, nombre: true, precio_unitario: true },
+    });
+    const productosMap = Object.fromEntries(
+      productosInfo.map((p) => [p.producto_id, p])
+    );
+
+    // Calcular recaudado
+    const recaudadoHoy = pagosHoy.reduce(
+      (acc, p) => acc + Number(p.monto_final),
+      0
+    );
+    const recaudadoAyer = pagosAyer.reduce(
+      (acc, p) => acc + Number(p.monto_final),
+      0
+    );
+
+    // Resumen de medios de pago
+    const resumenPagos = pagosHoy.reduce(
+      (acc, p) => {
+        acc[p.medio_de_pago] = (acc[p.medio_de_pago] ?? 0) + Number(p.monto_final);
+        return acc;
+      },
+      { efectivo: 0, tarjeta: 0, app: 0 } as Record<string, number>
+    );
+
+    // Pedidos activos (no entregados)
+    const pedidosActivos = pedidosHoy
+      .filter((p) => p.estado !== "Entregado")
+      .map((p) => ({
+        pedido_id: p.pedido_id,
+        numero_pedido: p.numero_pedido,
+        nombre_cliente: p.nombre_cliente,
+        mesa_numero: p.mesa?.numero ?? null,
+        precio_total: Number(p.precio_total),
+        estado: p.estado,
+        created_at: p.created_at,
+        productos: p.pedido_producto.map(
+          (pp) => `${pp.producto.nombre} x${pp.cantidad}`
+        ),
+      }));
+
+    // Calificación promedio
+    const calificacionPromedio =
+      calificacionesHoy.length > 0
+        ? calificacionesHoy.reduce((acc, c) => acc + c.puntuacion, 0) /
+          calificacionesHoy.length
+        : null;
+
+    // Mesas con pedido activo mapeado
+    const mesasMapeadas = mesas.map((m) => ({
+      mesa_id: m.mesa_id,
+      numero: m.numero,
+      estado: m.estado,
+      pedido_activo: m.pedido[0]
+        ? {
+            numero_pedido: m.pedido[0].numero_pedido,
+            nombre_cliente: m.pedido[0].nombre_cliente,
+            precio_total: Number(m.pedido[0].precio_total),
+            estado: m.pedido[0].estado,
+            created_at: m.pedido[0].created_at,
+          }
+        : null,
+    }));
+
+    // Top productos formateado
+    const topProductosFormateado = topProductos.map((tp) => {
+      const info = productosMap[tp.producto_id];
+      const cantidad = tp._sum.cantidad ?? 0;
+      return {
+        producto_id: tp.producto_id,
+        nombre: info?.nombre ?? "Desconocido",
+        cantidad,
+        total: cantidad * Number(info?.precio_unitario ?? 0),
+      };
+    });
+
+    res.status(200).json({
+      // Recaudación
+      recaudadoHoy: Number(recaudadoHoy.toFixed(2)),
+      recaudadoAyer: Number(recaudadoAyer.toFixed(2)),
+
+      // Pedidos
+      totalPedidosHoy: pedidosHoy.length,
+      pedidosAyer,
+
+      // Ticket promedio
+      ticketPromedioHoy:
+        pedidosHoy.length > 0
+          ? Number((recaudadoHoy / pedidosHoy.length).toFixed(2))
+          : 0,
+
+      // Mesas
+      mesas: mesasMapeadas,
+      mesasOcupadas: mesasMapeadas.filter((m) => m.estado === "Ocupada").length,
+      totalMesas: mesasMapeadas.length,
+
+      // Pedidos activos en tiempo real
+      pedidosActivos,
+
+      // Medios de pago
+      resumenPagos,
+
+      // Top productos
+      topProductos: topProductosFormateado,
+
+      // Calificaciones
+      calificacionPromedio:
+        calificacionPromedio !== null
+          ? Number(calificacionPromedio.toFixed(1))
+          : null,
+      totalCalificaciones: calificacionesHoy.length,
+      calificacionesRecientes: calificacionesRecientes.map((c) => ({
+        nombre_cliente: c.nombre_cliente,
+        puntuacion: c.puntuacion,
+        resena: c.resena,
+        created_at: c.created_at,
+        numero_pedido: c.pedido.numero_pedido,
+      })),
+
+      // Metadata
+      generadoEn: new Date(),
+    });
+  } catch (error) {
+    handleHttpError(res, "Error al obtener datos del dashboard", 500);
+  }
+}
+
 // Utils
 export async function eliminarFotoPorId(id: string) {
   const producto = await prisma.producto.findUnique({
@@ -849,4 +1107,27 @@ export function generarCodigoMesa(): string{
   const codigo = numeros.join("").split("").join("");
 
   return codigo;
+}
+
+// Horario de Argentina UTC-3
+const AR_OFFSET_MS = -3 * 60 * 60 * 1000;
+
+function getArgentinaDay(offsetDays = 0): { start: Date; end: Date } {
+  // Fecha actual en hora argentina
+  const nowUtc = Date.now() + AR_OFFSET_MS;
+  const arDate = new Date(nowUtc);
+
+  // Midnight del día pedido en hora argentina
+  const startAr = new Date(arDate);
+  startAr.setUTCHours(0, 0, 0, 0);
+  startAr.setUTCDate(startAr.getUTCDate() + offsetDays);
+
+  const endAr = new Date(startAr);
+  endAr.setUTCHours(23, 59, 59, 999);
+
+  // Convertir de vuelta a UTC para las queries de Prisma
+  const start = new Date(startAr.getTime() - AR_OFFSET_MS);
+  const end   = new Date(endAr.getTime()   - AR_OFFSET_MS);
+
+  return { start, end };
 }
