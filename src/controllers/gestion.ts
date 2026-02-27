@@ -120,7 +120,7 @@ export async function obtenerMesas(req: Request, res: Response) {
 
       const mesasConQr = existingMesas.map(mesa => ({
         ...mesa,
-        qr_url: `${FRONTEND_URL}validate/${mesa.mesa_id}`
+        qr_url: `${FRONTEND_URL}/validate/${mesa.mesa_id}`
       }));
 
         return res.status(200).json(mesasConQr);
