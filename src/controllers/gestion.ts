@@ -1072,15 +1072,346 @@ export async function obtenerDashboard(req: Request, res: Response) {
   }
 }
 
+// Reportes y analiticas
+interface RawDiaSerie {
+  fecha: Date;
+  pedidos: bigint;
+  clientes: bigint;
+  recaudado: string | null;
+}
+
+interface RawHora {
+  hora: number;
+  pedidos: bigint;
+}
+
+interface RawTopProducto {
+  producto_id: string;
+  nombre: string;
+  cantidad: bigint;
+  total: string;
+}
+
+interface RawMedioPago {
+  medio_de_pago: string;
+  total: string;
+}
+
+interface RawEstado {
+  estado: string;
+  count: bigint;
+}
+
+interface RawKpi {
+  recaudado: string | null;
+  pedidos: bigint;
+  clientes: bigint;
+  calificacion: string | null;
+}
+
+export async function obtenerReportesResumen(req: Request, res: Response) {
+  try {
+    const { from, to } = req.query as { from?: string; to?: string };
+
+    // Default: últimos 7 días
+    const today = new Date();
+    const defaultTo   = today.toISOString().slice(0, 10);
+    const defaultFrom = new Date(today.getTime() - 6 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+
+    const fromStr = from ?? defaultFrom;
+    const toStr   = to   ?? defaultTo;
+
+    const fromDate = arDateToUTC(fromStr);
+    const toDate   = arDateToUTC(toStr, true);
+    const { prevFrom, prevTo } = periodoAnterior(fromDate, toDate);
+
+    // Todas las queries en paralelo
+    const [
+      kpiActual,
+      kpiAnterior,
+      serieTemporal,
+      topProductos,
+      pagosPorMedio,
+      pedidosPorEstado,
+      horasPico,
+    ] = await Promise.all([
+
+      // KPIs período actual
+      prisma.$queryRaw<RawKpi[]>`
+        SELECT
+          SUM(pg.monto_final)                        AS recaudado,
+          COUNT(DISTINCT p.pedido_id)                AS pedidos,
+          COUNT(DISTINCT p.cliente_id)               AS clientes,
+          AVG(c.puntuacion)                          AS calificacion
+        FROM pedido p
+        LEFT JOIN pago          pg ON pg.pedido_id  = p.pedido_id
+        LEFT JOIN calificacion  c  ON c.pedido_id   = p.pedido_id
+        WHERE p.created_at BETWEEN ${fromDate} AND ${toDate}
+          AND p.pedido_padre IS NULL
+      `,
+
+      // KPIs período anterior (para variación)
+      prisma.$queryRaw<RawKpi[]>`
+        SELECT
+          SUM(pg.monto_final)                        AS recaudado,
+          COUNT(DISTINCT p.pedido_id)                AS pedidos,
+          COUNT(DISTINCT p.cliente_id)               AS clientes,
+          AVG(c.puntuacion)                          AS calificacion
+        FROM pedido p
+        LEFT JOIN pago          pg ON pg.pedido_id  = p.pedido_id
+        LEFT JOIN calificacion  c  ON c.pedido_id   = p.pedido_id
+        WHERE p.created_at BETWEEN ${prevFrom} AND ${prevTo}
+          AND p.pedido_padre IS NULL
+      `,
+
+      // Serie temporal día a día
+      // Usada tanto para el gráfico de línea como para el calendario
+      prisma.$queryRaw<RawDiaSerie[]>`
+        SELECT
+          DATE(CONVERT_TZ(p.created_at, '+00:00', '-03:00')) AS fecha,
+          COUNT(DISTINCT p.pedido_id)                         AS pedidos,
+          COUNT(DISTINCT p.cliente_id)                        AS clientes,
+          COALESCE(SUM(pg.monto_final), 0)                    AS recaudado
+        FROM pedido p
+        LEFT JOIN pago pg ON pg.pedido_id = p.pedido_id
+        WHERE p.created_at BETWEEN ${fromDate} AND ${toDate}
+          AND p.pedido_padre IS NULL
+        GROUP BY DATE(CONVERT_TZ(p.created_at, '+00:00', '-03:00'))
+        ORDER BY fecha ASC
+      `,
+
+      // Top 10 productos
+      prisma.$queryRaw<RawTopProducto[]>`
+        SELECT
+          pp.producto_id,
+          pr.nombre,
+          SUM(pp.cantidad)                        AS cantidad,
+          SUM(pp.cantidad * pp.precio_unitario)   AS total
+        FROM pedido_producto pp
+        JOIN producto pr ON pr.producto_id = pp.producto_id
+        JOIN pedido   p  ON p.pedido_id    = pp.pedido_id
+        WHERE p.created_at BETWEEN ${fromDate} AND ${toDate}
+          AND p.pedido_padre IS NULL
+        GROUP BY pp.producto_id, pr.nombre
+        ORDER BY cantidad DESC
+        LIMIT 10
+      `,
+
+      // Recaudado por medio de pago
+      prisma.$queryRaw<RawMedioPago[]>`
+        SELECT
+          pg.medio_de_pago,
+          SUM(pg.monto_final) AS total
+        FROM pago pg
+        JOIN pedido p ON p.pedido_id = pg.pedido_id
+        WHERE pg.created_at BETWEEN ${fromDate} AND ${toDate}
+          AND p.pedido_padre IS NULL
+        GROUP BY pg.medio_de_pago
+      `,
+
+      // Pedidos por estado
+      prisma.$queryRaw<RawEstado[]>`
+        SELECT estado, COUNT(*) AS count
+        FROM pedido
+        WHERE created_at BETWEEN ${fromDate} AND ${toDate}
+          AND pedido_padre IS NULL
+        GROUP BY estado
+      `,
+
+      // Horas pico (promedio por hora del día)
+      prisma.$queryRaw<RawHora[]>`
+        SELECT
+          HOUR(CONVERT_TZ(created_at, '+00:00', '-03:00')) AS hora,
+          COUNT(*)                                          AS pedidos
+        FROM pedido
+        WHERE created_at BETWEEN ${fromDate} AND ${toDate}
+          AND pedido_padre IS NULL
+        GROUP BY HOUR(CONVERT_TZ(created_at, '+00:00', '-03:00'))
+        ORDER BY hora ASC
+      `,
+    ]);
+
+    // Normalizar KPIs
+    const kpiA = kpiActual[0];
+    const kpiP = kpiAnterior[0];
+
+    const recaudadoActual = Number(kpiA!.recaudado ?? 0);
+    const pedidosActual = Number(kpiA!.pedidos ?? 0);
+    const clientesActual = Number(kpiA!.clientes ?? 0);
+    const califActual = kpiA!.calificacion ? Number(Number(kpiA!.calificacion).toFixed(1)) : null;
+    const ticketActual = pedidosActual > 0 ? recaudadoActual / pedidosActual : 0;
+
+    const recaudadoAnterior = Number(kpiP!.recaudado ?? 0);
+    const pedidosAnterior = Number(kpiP!.pedidos ?? 0);
+    const clientesAnterior = Number(kpiP!.clientes ?? 0);
+    const ticketAnterior = pedidosAnterior > 0 ? recaudadoAnterior / pedidosAnterior : 0;
+
+    const variacion = (actual: number, anterior: number) =>
+      anterior > 0
+        ? Number(((actual - anterior) / anterior * 100).toFixed(1))
+        : null;
+
+    // Normalizar serie temporal
+    const serie = serieTemporal.map((row) => ({
+      fecha: row.fecha instanceof Date
+        ? row.fecha.toISOString().slice(0, 10)
+        : String(row.fecha).slice(0, 10),
+      pedidos: Number(row.pedidos),
+      clientes: Number(row.clientes),
+      recaudado: Number(row.recaudado ?? 0),
+    }));
+
+    // Normalizar top productos
+    const maxCantidad = topProductos.length > 0
+      ? Math.max(...topProductos.map((p) => Number(p.cantidad)))
+      : 1;
+
+    const top = topProductos.map((p) => ({
+      producto_id: p.producto_id,
+      nombre: p.nombre,
+      cantidad: Number(p.cantidad),
+      total: Number(p.total),
+      porcentaje: Math.round((Number(p.cantidad) / maxCantidad) * 100),
+    }));
+
+    // Normalizar pagos
+    const pagos = { efectivo: 0, tarjeta: 0, app: 0 };
+    for (const row of pagosPorMedio) {
+      const key = row.medio_de_pago as keyof typeof pagos;
+      if (key in pagos) pagos[key] = Number(row.total);
+    }
+
+    // Normalizar estados
+    const estadoMap: Record<string, number> = {};
+    for (const row of pedidosPorEstado) {
+      estadoMap[row.estado] = Number(row.count);
+    }
+    const estados = {
+      Pendiente: estadoMap["Pendiente"] ?? 0,
+      En_preparacion: estadoMap["En_preparacion"] ?? 0,
+      Listo: estadoMap["Listo"] ?? 0,
+      Entregado: estadoMap["Entregado"] ?? 0,
+      Cancelado: estadoMap["Cancelado"] ?? 0,
+    };
+
+    // Normalizar horas pico
+    const maxPedidosHora = horasPico.length > 0
+      ? Math.max(...horasPico.map((h) => Number(h.pedidos)))
+      : 1;
+
+    const horas = horasPico.map((h) => ({
+      hora: Number(h.hora),
+      pedidos: Number(h.pedidos),
+      intensity: Number(h.pedidos) / maxPedidosHora,
+    }));
+
+    // Response
+    res.status(200).json({
+      // Metadata del período
+      periodo: { from: fromStr, to: toStr },
+
+      // KPIs actuales
+      kpis: {
+        recaudado: Number(recaudadoActual.toFixed(2)),
+        pedidos: pedidosActual,
+        clientes:clientesActual,
+        ticket: Number(ticketActual.toFixed(2)),
+        calificacion: califActual,
+      },
+
+      // Variaciones vs período anterior
+      variaciones: {
+        recaudado: variacion(recaudadoActual, recaudadoAnterior),
+        pedidos: variacion(pedidosActual, pedidosAnterior),
+        clientes: variacion(clientesActual, clientesAnterior),
+        ticket: variacion(ticketActual, ticketAnterior),
+      },
+
+      // Serie temporal día a día (para gráfico de línea)
+      serie,
+
+      // Top productos
+      topProductos: top,
+
+      // Medios de pago
+      pagos,
+
+      // Pedidos por estado
+      estados,
+
+      // Horas pico
+      horasPico: horas,
+    });
+  } catch (error) {
+    console.error(error);
+    handleHttpError(res, "Error al obtener reportes", 500);
+  }
+}
+
+export async function obtenerCalendario(req: Request, res: Response) {
+  try {
+    const today = new Date();
+    const year  = parseInt((req.query.year  as string) ?? today.getFullYear().toString());
+    const month = parseInt((req.query.month as string) ?? (today.getMonth() + 1).toString());
+
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) handleHttpError(res, "year y month son requeridos y deben ser válidos", 400);
+
+    // Primer y último día del mes en UTC considerando AR UTC-3
+    const fromDate = arDateToUTC(`${year}-${String(month).padStart(2, "0")}-01`);
+    const lastDay  = new Date(year, month, 0).getDate(); // último día del mes
+    const toDate   = arDateToUTC(
+      `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`,
+      true
+    );
+
+    const rows = await prisma.$queryRaw<RawDiaSerie[]>`
+      SELECT
+        DATE(CONVERT_TZ(p.created_at, '+00:00', '-03:00')) AS fecha,
+        COUNT(DISTINCT p.pedido_id) AS pedidos,
+        COUNT(DISTINCT p.cliente_id) AS clientes,
+        COALESCE(SUM(pg.monto_final), 0) AS recaudado
+      FROM pedido p
+      LEFT JOIN pago pg ON pg.pedido_id = p.pedido_id
+      WHERE p.created_at BETWEEN ${fromDate} AND ${toDate}
+        AND p.pedido_padre IS NULL
+      GROUP BY DATE(CONVERT_TZ(p.created_at, '+00:00', '-03:00'))
+      ORDER BY fecha ASC
+    `;
+
+    const dias = rows.map((row) => ({
+      fecha: row.fecha instanceof Date
+        ? row.fecha.toISOString().slice(0, 10)
+        : String(row.fecha).slice(0, 10),
+      pedidos: Number(row.pedidos),
+      clientes: Number(row.clientes),
+      recaudado: Number(row.recaudado ?? 0),
+    }));
+
+    res.status(200).json({
+      year,
+      month,
+      dias,
+      totales: {
+        recaudado: dias.reduce((a, d) => a + d.recaudado, 0),
+        pedidos: dias.reduce((a, d) => a + d.pedidos,   0),
+        clientes: dias.reduce((a, d) => a + d.clientes,  0),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    handleHttpError(res, "Error al obtener calendario", 500);
+  }
+}
+
 // Utils
 export async function eliminarFotoPorId(id: string) {
   const producto = await prisma.producto.findUnique({
     where: { producto_id: id }
   });
 
-  if (!producto) {
-    throw new Error("Producto no existe");
-  }
+  if (!producto) throw new Error("Producto no existe");
 
   // Eliminar archivo fisico
   const filePath = producto.imagen_url;
@@ -1130,4 +1461,17 @@ function getArgentinaDay(offsetDays = 0): { start: Date; end: Date } {
   const end   = new Date(endAr.getTime()   - AR_OFFSET_MS);
 
   return { start, end };
+}
+
+function arDateToUTC(dateStr: string, endOfDay = false): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const arMidnight = Date.UTC(y!, m! - 1, d, 0, 0, 0, 0) - AR_OFFSET_MS;
+  return new Date(endOfDay ? arMidnight + 86_399_999 : arMidnight);
+}
+
+function periodoAnterior(from: Date, to: Date): { prevFrom: Date; prevTo: Date } {
+  const diff = to.getTime() - from.getTime();
+  const prevTo   = new Date(from.getTime() - 1);
+  const prevFrom = new Date(prevTo.getTime() - diff);
+  return { prevFrom, prevTo };
 }

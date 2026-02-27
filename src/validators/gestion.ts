@@ -228,6 +228,41 @@ export const validatorPagosFiltro = [
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
 
+export const validatorReporteResumen = [
+  query("from")
+    .optional({ checkFalsy: true })
+    .isISO8601().withMessage("El parámetro 'from' debe tener formato YYYY-MM-DD")
+    .toDate(),
+
+  query("to")
+    .optional({ checkFalsy: true })
+    .isISO8601().withMessage("El parámetro 'to' debe tener formato YYYY-MM-DD")
+    .toDate(),
+
+  // Validación personalizada: from <= to
+  query("to").custom((value, { req }) => {
+    const from = new Date(req.query!.from);
+    const to = new Date(value);
+
+    if (from > to) {
+      throw new Error("La fecha de inicio no puede ser mayor a la final");
+    }
+    return true;
+  })
+];
+
+export const validatorCalendario = [
+  query("year")
+    .exists().withMessage("El parámetro año es obligatorio")
+    .isInt({ min: 2000, max: 2100 })
+    .withMessage("El parámetro año debe ser un número válido entre 2000 y 2100"),
+
+  query("month")
+    .optional()
+    .isInt({ min: 1, max: 12 })
+    .withMessage("El parámetro mes debe ser un número entre 1 y 12"),
+];
+
 export const validatorId = [
     param("id")
     .isUUID().withMessage('El ID debe ser un UUID válido.'),

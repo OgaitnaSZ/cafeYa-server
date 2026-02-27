@@ -111,10 +111,14 @@ router.get("/pago/pagos", encargadoOrAdmin, validator.validatorPagosFiltro, gest
 
 /* --- CALIFICACIONES --- */
 // Obtener calificaciones
-router.get("/calificaciones", adminOnly, gestion.obtenerCalificaciones);
+router.get("/calificaciones", encargadoOrAdmin, gestion.obtenerCalificaciones);
 
-/* --- PEDIDOS --- */
+/* --- ANALYTICS --- */
 // Obtener dashboard
-router.get("/dashboard", adminOnly, gestion.obtenerDashboard);
+router.get("/dashboard", encargadoOrAdmin, gestion.obtenerDashboard);
+
+// Reportes
+router.get("/reportes/resumen", encargadoOrAdmin, validator.validatorReporteResumen, gestion.obtenerReportesResumen);
+router.get("/reportes/calendario", encargadoOrAdmin, validator.validatorCalendario, gestion.obtenerCalendario);
 
 export { router };
