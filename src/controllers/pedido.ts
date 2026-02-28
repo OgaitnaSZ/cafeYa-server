@@ -3,13 +3,13 @@ import { PrismaClient, producto } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { pedido_estado } from "@prisma/client";
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+import { notifyNuevoPedido } from "../sockets/socketManager";
 
 // Crear Pedido
 export async function crearPedido(req: Request, res: Response) {
   try {
     const dataPedido = matchedData(req);
-
     
     const productos: producto[] = dataPedido.productos;
     
@@ -72,6 +72,16 @@ export async function crearPedido(req: Request, res: Response) {
           })
         )
       );
+
+      notifyNuevoPedido({   
+        pedido_id: pedido.pedido_id,
+        numero_pedido: pedido.numero_pedido,
+        mesa_id: pedido.mesa_id,
+        cliente_id: pedido.cliente_id,
+        nombre_cliente: pedido.nombre_cliente,
+        productos: productos.length,
+        precio_total: Number(pedido.precio_total)
+      });
 
       return { pedido, productos };
     });

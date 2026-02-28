@@ -4,7 +4,8 @@ import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { encrypt } from "../utils/handlePassword";
 import fs from 'fs';
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+import { notifyCambioEstadoPedido } from "../sockets/socketManager";
 const MEDIA_PATH = `${__dirname}/../uploads`;
 const PUBLIC_URL = process.env.PUBLIC_URL;
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -298,7 +299,13 @@ export async function actualizarEstadoPedido(req: Request, res: Response) {
       }
     });
 
-    if(!updatedPedido) return handleHttpError(res, "ID de pedido incorrecto", 404)
+    if(!updatedPedido) return handleHttpError(res, "ID de pedido incorrecto", 404);
+
+    notifyCambioEstadoPedido({
+      pedido_id: updatedPedido.pedido_id,
+      mesa_id: updatedPedido.mesa_id,
+      estado: updatedPedido.estado
+    });
 
     res.status(200).json(updatedPedido);
   } catch (err) {
