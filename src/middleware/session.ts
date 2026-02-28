@@ -20,13 +20,12 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
             }
         })
 
-        if (!user) return handleHttpError(res, "USUARIO NO ENCONTRADO", 404);
+        if (!user) return handleHttpError(res, "Usuario no encontrado", 404);
         
         req.user = user
 
-
         return next()
     }catch(error){
-        handleHttpError(res, "NOT SESSION", 401)
+        return res.status(401).json({ message: "Sesion invalia o token expirado" });
     }
 }

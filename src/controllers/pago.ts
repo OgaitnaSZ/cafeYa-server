@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import PDFDocument from 'pdfkit';
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
+import { notifyNuevoPago } from "../sockets/socketManager";
 const prisma = new PrismaClient()
 
 export async function crearPago(req: Request, res: Response) {
@@ -13,10 +14,26 @@ export async function crearPago(req: Request, res: Response) {
             // 1. Obtener el pedido y validar
             const pedido = await tx.pedido.findUnique({
                 where: { pedido_id: dataPago.pedido_id },
-                select: { estado: true }
+                select: { 
+                    estado: true,
+                    mesa_id: true,
+                    mesa: {
+                        select: {
+                            numero: true
+                        }
+                    },
+                    cliente: {
+                        select: {
+                            cliente_id: true,
+                            nombre: true
+                        }
+                    }
+                }
             });
 
-            if (!pedido) return handleHttpError(res, "Pedido no encontrado", 404)
+            if (!pedido) {
+                throw new Error("Pedido no encontrado");
+            }
 
             // 2. Obtener productos del pedido con precio y cantidad
             const pedidoProductos = await tx.pedido_producto.findMany({
@@ -27,7 +44,9 @@ export async function crearPago(req: Request, res: Response) {
                 }
             });
 
-            if (pedidoProductos.length === 0) return handleHttpError(res, "El pedido no tiene productos", 404)
+            if (pedidoProductos.length === 0) {
+                throw new Error("El pedido no tiene productos");
+            }
 
             // 3. Calcular el monto total
             const monto = pedidoProductos.reduce((total, item) => {
@@ -56,7 +75,19 @@ export async function crearPago(req: Request, res: Response) {
                 },
             });
 
-            return pago;
+            return { pago, pedido };
+        });
+
+        notifyNuevoPago({
+            pago_id: result.pago.pago_id,
+            pedido_id: result.pago.pedido_id,
+            mesa_id: result.pedido.mesa_id,
+            mesa_numero: result.pedido.mesa.numero!,
+            usuario_id: result.pedido.cliente.cliente_id,
+            nombre_usuario: result.pedido.cliente.nombre,
+            monto_final: Number(result.pago.monto_final),
+            metodoPago: result.pago.medio_de_pago,
+            createdAt: new Date()
         });
 
         res.status(201).json(result);

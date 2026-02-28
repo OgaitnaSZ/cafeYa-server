@@ -33,6 +33,6 @@ export const verifyToken = async (tokenJwt: string): Promise<any> => {
     try {
         return jwt.verify(tokenJwt, JWT_SECRET as string);
     } catch (error) {
-        return null;
+        throw new Error("NOT_SESSION");
     }
 };

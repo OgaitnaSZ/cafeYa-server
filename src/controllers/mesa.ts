@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
 import { mesa_estado } from "@prisma/client";
+import { notifyMesaOcupada } from "../sockets/socketManager";
 const prisma = new PrismaClient()
 
 // Validar mesa
@@ -20,6 +21,12 @@ export async function ValidarMesa(req: Request, res: Response) {
           mesa_id: existingMesa.mesa_id,
           numero: existingMesa.numero
         };
+
+        notifyMesaOcupada({   
+          mesa_id: mesaSinCodigo.mesa_id,
+          mesa_numero: mesaSinCodigo.numero!,
+          ocupadaAt: new Date(),
+        });
 
         return res.status(200).json(mesaSinCodigo);
     } catch (err) {
@@ -46,6 +53,8 @@ export async function validarCodigoDinamico(req: Request, res: Response) {
             where: { mesa_id: dataMesa.mesa_id },
             data: { estado: mesa_estado.Ocupada }
         })
+
+
         return res.status(200).json(existingMesa);
     } catch (err) {
       return handleHttpError(res, "Error al validar codigo de la mesa", 500)

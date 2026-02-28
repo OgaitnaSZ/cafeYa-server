@@ -1,77 +1,9 @@
 import { Socket } from "socket.io";
 import { io } from "../app";
-import { pago_medio_de_pago, pedido_estado, usuario_rol } from "@prisma/client";
+import { Auth, CambioEstadoPedidoPayload, ClienteConectado, LlamadaMozoPayload, NuevaMesaOcupadaPayload, NuevaResenaPayload, NuevoPagoPayload, NuevoPedidoPayload } from "./interfaces";
 
-// Tipos
-
-interface ClienteConectado {
-  socketId: string;
-  userId: string;
-  userName: string;
-  mesaId: string;
-  mesaNumero: number;
-  connectedAt: Date;
-}
-
-// Payloads de eventos cliente → admin
-export interface NuevoPedidoPayload {
-  pedido_id: string;
-  numero_pedido: string;
-  mesa_id: string;
-  cliente_id: string;
-  nombre_cliente: string;
-  productos: number;
-  precio_total: number;
-}
-
-export interface NuevaMesaOcupadaPayload {
-  mesaId: string;
-  mesaNumero: number;
-  userId: string;
-  userName: string;
-  ocupadaAt: Date;
-}
-
-export interface NuevaReseñaPayload {
-  reseñaId: string;
-  mesaId: string;
-  mesaNumero: number;
-  userId: string;
-  userName: string;
-  rating: number;
-  comentario?: string;
-  createdAt: Date;
-}
-
-export interface NuevoPagoPayload {
-  pagoId: string;
-  pedidoId: string;
-  mesaId: string;
-  mesaNumero: number;
-  userId: string;
-  userName: string;
-  monto: number;
-  metodoPago: pago_medio_de_pago;
-  createdAt: Date;
-}
-
-export interface LlamadaMozoPayload {
-  mesaId: string;
-  mesaNumero: number;
-  userId: string;
-  userName: string;
-  timestamp: Date;
-}
-
-// Payloads de eventos admin → cliente
-export interface CambioEstadoPedidoPayload {
-  pedido_id: string;
-  mesa_id: string;
-  estado: pedido_estado;
-}
 
 // Estado en memoria 
-
 const connectedClients = new Map<string, ClienteConectado>();
 const connectedAdmins = new Set<string>();
 
@@ -82,24 +14,17 @@ export function initializeSocket() {
     console.log(`✅ Socket conectado: ${socket.id}`);
 
     // Autenticación
-    socket.on("authenticate", (data: {
-      userId: string;
-      userName: string;
-      mesaId?: string;
-      userRole: usuario_rol;
-      mesaNumero?: number;
-      token?: string;
-    }) => {
+    socket.on("authenticate", (data: Auth) => {
         connectedAdmins.add(socket.id);
         socket.join("admin-room");
-        console.log(`👨‍💼 Staff conectado: ${socket.id} (${data.userRole})`);
+        console.log(`👨‍💼 Staff conectado: ${socket.id} (${data.rol_usuario})`);
 
         socket.emit("admin:clientes-conectados", Array.from(connectedClients.values()));
 
 
       socket.emit("authenticated", {
         success: true,
-        role: data.userRole,
+        role: data.rol_usuario,
         socketId: socket.id,
       });
     });
@@ -114,15 +39,15 @@ export function initializeSocket() {
       }
 
       const payload: LlamadaMozoPayload = {
-        mesaId: cliente.mesaId,
-        mesaNumero: cliente.mesaNumero,
-        userId: cliente.userId,
-        userName: cliente.userName,
+        mesa_id: cliente.mesa_id,
+        mesa_numero: cliente.mesa_numero,
+        usuario_id: cliente.usuario_id,
+        nombre_usuario: cliente.nombre_usuario,
         timestamp: new Date(),
       };
 
       io.to("admin-room").emit("admin:llamada-mozo", payload);
-      console.log(`🔔 Llamada al mozo: Mesa ${cliente.mesaNumero}`);
+      console.log(`🔔 Llamada al mozo: Mesa ${cliente.mesa_numero}`);
 
       // Confirmar al cliente que la llamada fue enviada
       socket.emit("mozo:llamada-confirmada", { timestamp: payload.timestamp });
@@ -136,7 +61,7 @@ export function initializeSocket() {
       if (clienteData) {
         io.to("admin-room").emit("cliente:desconectado", clienteData);
         connectedClients.delete(socket.id);
-        console.log(`👤 Cliente desconectado: ${clienteData.userName} - Mesa ${clienteData.mesaNumero}`);
+        console.log(`👤 Cliente desconectado: ${clienteData.nombre_usuario} - Mesa ${clienteData.mesa_numero}`);
       }
 
       connectedAdmins.delete(socket.id);
@@ -154,17 +79,17 @@ export function notifyNuevoPedido(payload: NuevoPedidoPayload) {
 
 export function notifyMesaOcupada(payload: NuevaMesaOcupadaPayload) {
   io.to("admin-room").emit("admin:mesa-ocupada", payload);
-  console.log(`🪑 Mesa ${payload.mesaNumero} ocupada por ${payload.userName}`);
+  console.log(`🪑 Mesa ${payload.mesa_numero}`);
 }
 
-export function notifyNuevaReseña(payload: NuevaReseñaPayload) {
+export function notifyNuevaResena(payload: NuevaResenaPayload) {
   io.to("admin-room").emit("admin:nueva-reseña", payload);
-  console.log(`⭐ Nueva reseña de Mesa ${payload.mesaNumero}: ${payload.rating}/5`);
+  console.log(`⭐ Nueva reseña de ${payload.nombre_cliente}: ${payload.puntuacion}/5`);
 }
 
 export function notifyNuevoPago(payload: NuevoPagoPayload) {
   io.to("admin-room").emit("admin:nuevo-pago", payload);
-  console.log(`💳 Pago recibido: $${payload.monto} - Mesa ${payload.mesaNumero}`);
+  console.log(`💳 Pago recibido: $${payload.monto_final} - Mesa ${payload.mesa_numero}`);
 }
 
 export function notifyCambioEstadoPedido(payload: CambioEstadoPedidoPayload) {
@@ -173,8 +98,8 @@ export function notifyCambioEstadoPedido(payload: CambioEstadoPedidoPayload) {
 }
 
 // Utilidades
-export function emitToMesa(mesaId: string, event: string, data: unknown) {
-  io.to(`mesa-${mesaId}`).emit(event, data);
+export function emitToMesa(mesa_id: string, event: string, data: unknown) {
+  io.to(`mesa-${mesa_id}`).emit(event, data);
 }
 
 export function emitToAdmins(event: string, data: unknown) {
@@ -185,6 +110,6 @@ export function getConnectedClients() {
   return Array.from(connectedClients.values());
 }
 
-export function getClientesByMesa(mesaId: string) {
-  return Array.from(connectedClients.values()).filter((c) => c.mesaId === mesaId);
+export function getClientesByMesa(mesa_id: string) {
+  return Array.from(connectedClients.values()).filter((c) => c.mesa_id === mesa_id);
 }

@@ -2,23 +2,33 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { matchedData } from "express-validator";
 import { handleHttpError } from "../utils/handleError";
+import { notifyNuevaResena } from "../sockets/socketManager";
 const prisma = new PrismaClient()
 
 // Crear Calificacion
 export async function crearCalificacion(req: Request, res: Response) {
     try{
-      const dataReview = matchedData(req);
+          const dataReview = matchedData(req);
+      
+          const newReview = await prisma.calificacion.create({
+            data: {
+              pedido_id: dataReview.pedido_id,
+              puntuacion: dataReview.puntuacion,
+              resena: dataReview.resena,
+              nombre_cliente: dataReview.nombre_cliente
+            },
+          });
+
+        notifyNuevaResena ({
+            resena_id: newReview.id,
+            pedido_id: newReview.pedido_id,
+            nombre_cliente: newReview.nombre_cliente,
+            puntuacion: newReview.puntuacion,
+            resena: newReview.resena!,
+            createdAt: new Date(),
+        })
   
-      const newReview = await prisma.calificacion.create({
-        data: {
-          pedido_id: dataReview.pedido_id,
-          puntuacion: dataReview.puntuacion,
-          resena: dataReview.resena,
-          nombre_cliente: dataReview.nombre_cliente
-        },
-      });
-  
-      res.status(201).json(newReview );
+          res.status(201).json(newReview );
     }catch(error){
       return handleHttpError(res, "Error al crear calificacion", 500);
     }
