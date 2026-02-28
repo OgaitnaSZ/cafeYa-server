@@ -14,19 +14,54 @@ export function initializeSocket() {
     console.log(`✅ Socket conectado: ${socket.id}`);
 
     // Autenticación
-    socket.on("authenticate", (data: Auth) => {
-        connectedAdmins.add(socket.id);
-        socket.join("admin-room");
-        console.log(`👨‍💼 Staff conectado: ${socket.id} (${data.rol_usuario})`);
+    socket.on("authenticate", (data: {
+      userId?: string;
+      userName?: string;
+      userRole?: string;
+      mesaId?: string;
+      mesaNumero?: number;
+      // campos del admin
+      usuario_id?: string;
+      nombre_usuario?: string;
+      rol_usuario?: string;
+      token?: string;
+    }) => {
 
-        socket.emit("admin:clientes-conectados", Array.from(connectedClients.values()));
+        // Cliente
+        if (data.mesaId) {
+          const clienteData: ClienteConectado = {
+            socketId: socket.id,
+            usuario_id: data.userId ?? '',
+            nombre_usuario: data.userName ?? 'Cliente',
+            mesa_id: data.mesaId,
+            mesa_numero: data.mesaNumero!,
+            connectedAt: new Date(),
+          };
+      
+          connectedClients.set(socket.id, clienteData);
+          socket.join(`mesa-${data.mesaId}`);
+          console.log(`👤 Cliente ${clienteData.nombre_usuario} → Mesa ${clienteData.mesa_numero}`);
+          io.to('admin-room').emit('cliente:conectado', clienteData);
+      
+          socket.emit('authenticated', { success: true, role: 'cliente', socketId: socket.id });
+          return;
+        }
 
+        // Admin / staff
+        const rol = data.userRole ?? data.rol_usuario;
+      
+        if (rol && ['admin', 'encargado', 'cocina'].includes(rol)) {
+          connectedAdmins.add(socket.id);
+          socket.join('admin-room');
+          console.log(`👨‍💼 Staff conectado: ${socket.id} (${rol})`);
+      
+          socket.emit('admin:clientes-conectados', Array.from(connectedClients.values()));
+          socket.emit('authenticated', { success: true, role: rol, socketId: socket.id });
+          return;
+        }
 
-      socket.emit("authenticated", {
-        success: true,
-        role: data.rol_usuario,
-        socketId: socket.id,
-      });
+        console.warn(`⚠️ Socket ${socket.id} sin datos válidos:`, data);
+        socket.emit('authenticated', { success: false, socketId: socket.id });
     });
 
     // Llamada al mozo (único evento que viene del frontend cliente)

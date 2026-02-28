@@ -22,12 +22,6 @@ export async function ValidarMesa(req: Request, res: Response) {
           numero: existingMesa.numero
         };
 
-        notifyMesaOcupada({   
-          mesa_id: mesaSinCodigo.mesa_id,
-          mesa_numero: mesaSinCodigo.numero!,
-          ocupadaAt: new Date(),
-        });
-
         return res.status(200).json(mesaSinCodigo);
     } catch (err) {
       return handleHttpError(res, "Error al validar id de la mesa", 500)
@@ -54,6 +48,11 @@ export async function validarCodigoDinamico(req: Request, res: Response) {
             data: { estado: mesa_estado.Ocupada }
         })
 
+        notifyMesaOcupada({   
+          mesa_id: existingMesa.mesa_id,
+          mesa_numero: existingMesa.numero!,
+          ocupadaAt: new Date(),
+        });
 
         return res.status(200).json(existingMesa);
     } catch (err) {
