@@ -42,8 +42,33 @@ export async function validarCodigoDinamico(req: Request, res: Response) {
 
         if(existingMesa.estado === mesa_estado.Ocupada) return handleHttpError(res, "Mesa ocupada", 401)
 
+        await prisma.mesa.update({
+            where: { mesa_id: dataMesa.mesa_id },
+            data: { estado: mesa_estado.Ocupada }
+        })
         return res.status(200).json(existingMesa);
     } catch (err) {
       return handleHttpError(res, "Error al validar codigo de la mesa", 500)
+    }
+}
+
+export async function liberarMesa(req: Request, res: Response) {
+    try {
+        const data = req.params;
+        const mesa_id = <string>data.id;
+    
+        const existingMesa = await prisma.mesa.findUnique({
+            where: { mesa_id }
+        });
+          
+        if(!existingMesa) return handleHttpError(res, "MESA NO EXISTE", 404)
+
+        await prisma.mesa.update({
+            where: { mesa_id },
+            data: { estado: mesa_estado.Disponible }
+        })
+        return res.status(200).json(existingMesa);
+    } catch (err) {
+      return handleHttpError(res, "Error al actualizar estado de de la mesa", 500)
     }
 }
