@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 import { notifyCambioEstadoPedido } from "../sockets/socketManager";
 const MEDIA_PATH = `${__dirname}/../uploads`;
 const PUBLIC_URL = process.env.PUBLIC_URL;
-const FRONTEND_URL = process.env.FRONTEND_URL;
+const FRONTEND_CLIENT_URL = process.env.FRONTEND_CLIENT_URL;
 
 // Usuarios
 export async function obteneUsuarios(req: Request, res: Response) {
@@ -121,7 +121,7 @@ export async function obtenerMesas(req: Request, res: Response) {
 
       const mesasConQr = existingMesas.map(mesa => ({
         ...mesa,
-        qr_url: `${FRONTEND_URL}/validate/${mesa.mesa_id}`
+        qr_url: `${FRONTEND_CLIENT_URL}/validate/${mesa.mesa_id}`
       }));
 
         return res.status(200).json(mesasConQr);
