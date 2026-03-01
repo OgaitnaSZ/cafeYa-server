@@ -158,7 +158,7 @@ enum usuario_rol {
 
 enum pedido_estado {
   Pendiente
-  En_preparacion @map("En preparacion")
+  En_preparacion @map("En_preparacion")
   Listo
   Entregado
 }

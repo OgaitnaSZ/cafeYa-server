@@ -128,8 +128,9 @@ export function notifyNuevoPago(payload: NuevoPagoPayload) {
 }
 
 export function notifyCambioEstadoPedido(payload: CambioEstadoPedidoPayload) {
-  io.to(`mesa-${payload.mesa_id}`).emit("pedido:estado-actualizado", payload);
-  console.log(`🔄 Pedido ${payload.pedido_id} → ${payload.estado}`);
+  const room = `mesa-${payload.mesa_id}`;
+  io.to(room).emit("pedido:estado-actualizado", payload);
+  console.log(`Enviando actualizacion de estado ${payload.estado} del pedido ${payload.pedido_id} a mesa ${payload.mesa_id} `)
 }
 
 // Utilidades
