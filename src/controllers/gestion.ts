@@ -337,11 +337,14 @@ export async function obtenerPedidosPorMesa(req: Request, res: Response) {
 export async function obtenerPedidosActivos(req: Request, res: Response) {
     try {
         const existingPedido = await prisma.pedido.findMany({
-            where:{
-                estado: {
-                  not: pedido_estado.Entregado
-                }
+          where:{
+            estado: {
+              not: pedido_estado.Entregado
             }
+          },
+          include: {
+            mesa: true
+          }
         });
         
         if(!existingPedido) return handleHttpError(res, "No hay pedidos activos", 404)
