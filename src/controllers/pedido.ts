@@ -62,7 +62,7 @@ export async function crearPedido(req: Request, res: Response) {
 
       return { pedido, productos };
 
-    }, { timeout: 10000 }); // ✅ Timeout de respaldo
+    }, { timeout: 10000 });
 
 
     notifyNuevoPedido({

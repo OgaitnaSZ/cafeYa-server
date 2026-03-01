@@ -118,7 +118,7 @@ export function notifyMesaOcupada(payload: NuevaMesaOcupadaPayload) {
 }
 
 export function notifyNuevaResena(payload: NuevaResenaPayload) {
-  io.to("admin-room").emit("admin:nueva-reseña", payload);
+  io.to("admin-room").emit("admin:nueva-resena", payload);
   console.log(`⭐ Nueva reseña de ${payload.nombre_cliente}: ${payload.puntuacion}/5`);
 }
 
