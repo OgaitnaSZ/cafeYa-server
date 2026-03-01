@@ -303,6 +303,7 @@ export async function actualizarEstadoPedido(req: Request, res: Response) {
 
     notifyCambioEstadoPedido({
       pedido_id: updatedPedido.pedido_id,
+      numero_pedido: updatedPedido.numero_pedido,
       mesa_id: updatedPedido.mesa_id,
       estado: updatedPedido.estado
     });

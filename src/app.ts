@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 import routes from "./routes/index";
 import path from 'path';
-import { Request, Response } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { initializeSocket } from "./sockets/socketManager";
@@ -17,8 +16,8 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: [
-      process.env.FRONTEND_URL || "http://localhost:4200",
-      "http://localhost:4201"
+      process.env.FRONTEND_ADMIN_URL || "http://localhost:4200",
+      process.env.FRONTEND_CLIENT_URL || 'http://localhost:4201',
     ],
     methods: ["GET", "POST"],
     credentials: true
@@ -30,9 +29,8 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const allowedOrigins: string[] = [
-  process.env.FRONTEND_URL || '',
-  'http://localhost:4200', // client
-  'http://localhost:4201'  // admin
+  process.env.FRONTEND_ADMIN_URL || 'http://localhost:4200',
+  process.env.FRONTEND_CLIENT_URL || 'http://localhost:4201',
 ];
 
 const corsOptions: CorsOptions = {
@@ -53,19 +51,13 @@ const corsOptions: CorsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Importacion dinamica de rutas
-app.use("/api", routes);
-// Ruta de prueba
-app.get('/test', (req: Request, res:Response) => {
-  res.json({ message: 'Server is alive!' });
-});
-
+// Rutas
 app.use("/api", routes);
 
 export { io };
 
-const port = process.env.PORT || 4001;
+const port = process.env.PORT || 4000;
 const NODE_ENV = process.env.NODE_ENV;
-if(NODE_ENV !== 'test' && NODE_ENV !== 'production') httpServer.listen(port, () => {});
+if(NODE_ENV !== 'test' && NODE_ENV !== 'prod') httpServer.listen(port, () => {});
 
 export default app;

@@ -66,6 +66,7 @@ export interface LlamadaMozoPayload {
 // Payloads de eventos admin → cliente
 export interface CambioEstadoPedidoPayload {
   pedido_id: string;
+  numero_pedido: string;
   mesa_id: string;
   estado: pedido_estado;
 }
