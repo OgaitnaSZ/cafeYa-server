@@ -15,11 +15,11 @@ const encargadoOrAdmin = checkRol([
   usuario_rol.admin,
   usuario_rol.encargado
 ]);
-const cocinaOrAdmin = checkRol([
+const allRoles = checkRol([
   usuario_rol.admin,
+  usuario_rol.encargado,
   usuario_rol.cocina
-]);
-
+])
 
 /* --- USUARIOS --- */
 // Obtener Usuarios
@@ -32,23 +32,23 @@ router.post("/usuario/crear", adminOnly, validator.validatorCrearUsuario, gestio
 router.put("/usuario", adminOnly, validator.validatorActualizarUsuario, gestion.actualizarUsuario);
 
 // Eliminar Usuario
-router.delete("/usuario/eliminar/:id", validator.validatorId, gestion.eliminarUsuario);
+router.delete("/usuario/eliminar/:id", adminOnly, validator.validatorId, gestion.eliminarUsuario);
 
 /* --- MESAS --- */
 // Obtener Mesas
 router.get("/mesa/mesas", encargadoOrAdmin, gestion.obtenerMesas);
 
 // Crear Mesa
-router.post("/mesa/crear", adminOnly, validator.validatorCrearMesa, gestion.crearMesa);
+router.post("/mesa/crear", encargadoOrAdmin, validator.validatorCrearMesa, gestion.crearMesa);
 
 // Actualizar Mesa
-router.put("/mesa", adminOnly, validator.validatorEditarMesa, gestion.actualizarMesa);
+router.put("/mesa", encargadoOrAdmin, validator.validatorEditarMesa, gestion.actualizarMesa);
 
 // Actualizar codigo mesa
 router.patch("/mesa/codigo/:id", encargadoOrAdmin, validator.validatorId, gestion.actualizarCodigoMesa);
 
 // Eliminar Mesa
-router.delete("/mesa/eliminar/:id", validator.validatorId, gestion.eliminarMesa);
+router.delete("/mesa/eliminar/:id", encargadoOrAdmin, validator.validatorId, gestion.eliminarMesa);
 
 /* --- PEDIDOS --- */
 // Obtener pedidos
@@ -58,20 +58,20 @@ router.get("/pedido/pedidos", encargadoOrAdmin, validator.validatorPedidosFiltro
 router.get("/pedido/pedido/:id", encargadoOrAdmin, validator.validatorId, gestion.obtenerPedido);
 
 // Actualizar Estado Pedido
-router.patch("/pedido/estado", validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
+router.patch("/pedido/estado", allRoles, validator.validatorEstadoPedido, gestion.actualizarEstadoPedido);
 
 // Obtener Pedidos Activos
-router.get("/pedido/activos", cocinaOrAdmin, gestion.obtenerPedidosActivos);
+router.get("/pedido/activos", allRoles, gestion.obtenerPedidosActivos);
 
 /* --- PRODUCTOS --- */
 // Crear productos
-router.post("/producto/crear", adminOnly, validator.validatorCrearProducto, gestion.crearProducto);
+router.post("/producto/crear", encargadoOrAdmin, validator.validatorCrearProducto, gestion.crearProducto);
 
 // Actualizar producto
-router.put("/producto/editar", adminOnly, validator.validatorActualizarProducto, gestion.actualiarProducto);
+router.put("/producto/editar", encargadoOrAdmin, validator.validatorActualizarProducto, gestion.actualiarProducto);
 
 // Obtener productos
-router.get("/producto/productos", adminOnly, gestion.obtenerProductos);
+router.get("/producto/productos", encargadoOrAdmin, gestion.obtenerProductos);
 
 // Toggle estado producto
 router.patch("/producto/estado/:id", encargadoOrAdmin, validator.validatorId, gestion.toggleEstadoProducto);
@@ -80,30 +80,30 @@ router.patch("/producto/estado/:id", encargadoOrAdmin, validator.validatorId, ge
 router.patch("/producto/destacar/:id", encargadoOrAdmin, validator.validatorId, gestion.destacarProducto);
 
 // Eliminar producto
-router.delete("/producto/eliminar/:id", validator.validatorId, gestion.eliminarProducto);
+router.delete("/producto/eliminar/:id", encargadoOrAdmin, validator.validatorId, gestion.eliminarProducto);
 
 // Subir foto producto
-router.post("/producto/foto", uploadMiddleware, validator.validatorIdFoto, gestion.subirFoto);
+router.post("/producto/foto", encargadoOrAdmin, uploadMiddleware, validator.validatorIdFoto, gestion.subirFoto);
 
 /* --- CATEGORIAS --- */
 // Obtener categorias
 router.get("/categoria/categorias", encargadoOrAdmin, gestion.obtenerCategorias);
 
 // Crear categoria
-router.post("/categoria/crear", adminOnly, validator.validatorCrearCategoria, gestion.crearCategoria);
+router.post("/categoria/crear", encargadoOrAdmin, validator.validatorCrearCategoria, gestion.crearCategoria);
 
 // Actualizar categoria
-router.put("/categoria/editar", adminOnly, validator.validatorActualizarCategoria, gestion.actualizarCategoria);
+router.put("/categoria/editar", encargadoOrAdmin, validator.validatorActualizarCategoria, gestion.actualizarCategoria);
 
 // Eliminar categoria
-router.delete("/categoria/eliminar/:id", validator.validatorIdInt, gestion.eliminarCategoria);
+router.delete("/categoria/eliminar/:id", encargadoOrAdmin, validator.validatorIdInt, gestion.eliminarCategoria);
 
 /* --- CLIENTES --- */
 // Obtener clientes
 router.get("/cliente/clientes", encargadoOrAdmin, gestion.obtenerClientes);
 
 // Eliminar clientes
-router.delete("/cliente/eliminar/:id", validator.validatorId, gestion.eliminarCliente);
+router.delete("/cliente/eliminar/:id", adminOnly, validator.validatorId, gestion.eliminarCliente);
 
 /* --- PAGOS --- */
 // Obtener pagos
