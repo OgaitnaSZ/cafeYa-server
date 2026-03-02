@@ -6,6 +6,7 @@ import { encrypt } from "../utils/handlePassword";
 import fs from 'fs';
 const prisma = new PrismaClient();
 import { notifyCambioEstadoPedido } from "../sockets/socketManager";
+import { registrarLog } from "../utils/handleAudit";
 const MEDIA_PATH = `${__dirname}/../uploads`;
 const PUBLIC_URL = process.env.PUBLIC_URL;
 const FRONTEND_CLIENT_URL = process.env.FRONTEND_CLIENT_URL;
@@ -99,12 +100,26 @@ export async function eliminarUsuario(req: Request, res: Response) {
       }
 
       // Archivar usuario (soft delete)
-      await prisma.usuario.update({
+      const deletedUser = await prisma.usuario.update({
         where: { id },
         data: { 
           is_archived: 1
         }
       });
+
+      // Registrar log
+      registrarLog({
+        usuarioId:     req.user?.id,
+        nombreUsuario: req.user?.nombre,
+        rolUsuario:    req.user?.rol,
+        accion:        'UPDATE',
+        entidad:       'Pedido',
+        entidadId:     user.id,
+        antes:         { estado: user },
+        despues:       { deletedUser },
+        descripcion:   `Cambió estado de ${user} a ${deletedUser}`,
+        ip:            req.ip!,
+      }).catch(console.error);
 
       return res.status(200).json({ success: true });
   } catch (err) {
