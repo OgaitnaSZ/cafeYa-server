@@ -134,9 +134,9 @@ model categoria {
 }
 
 model audit_log {
-  id             String           @id @db.VarChar(25)
+  id             Int              @id @default(autoincrement())
   created_at     DateTime         @default(now()) @db.DateTime(0)
-  usuario_id     String?          @db.VarChar(25)
+  usuario_id     String?          @db.VarChar(36)
   nombre_usuario String?          @db.VarChar(255)
   rol_usuario    String?          @db.VarChar(100)
   accion         audit_log_accion
