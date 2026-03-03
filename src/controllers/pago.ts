@@ -138,85 +138,109 @@ export async function generarRecibo(req: Request, res: Response) {
 
     const { pedido } = pago;
 
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const WIDTH   = 226; // 80mm en puntos
+    const MARGIN  = 12;
+    const CW      = WIDTH - MARGIN * 2; // content width
+
+    const doc = new PDFDocument({ margin: MARGIN, size: [WIDTH, 1000] });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="recibo-${pedido.numero_pedido}.pdf"`);
     doc.pipe(res);
 
-    // ── ENCABEZADO ──────────────────────────────────────────
-    doc.fontSize(20).font('Helvetica-Bold').text('CAFETERÍA', { align: 'center' });
-    doc.fontSize(10).font('Helvetica').text('Tu dirección aquí', { align: 'center' });
+    const centerText = (text: string, fontSize: number, font = 'Courier') => {
+      doc.font(font).fontSize(fontSize).text(text, MARGIN, doc.y, { width: CW, align: 'center' });
+    };
+
+    const rowText = (left: string, right: string, fontSize = 7.5, bold = false) => {
+      const font = bold ? 'Courier-Bold' : 'Courier';
+      const y = doc.y;
+      doc.font(font).fontSize(fontSize);
+      doc.text(left,  MARGIN,          y, { width: CW * 0.65 });
+      doc.text(right, MARGIN + CW * 0.65, y, { width: CW * 0.35, align: 'right' });
+      doc.moveDown(0.4);
+    };
+
+    const separator = (char = '-') => {
+      const line = char.repeat(48);
+      centerText(line, 7);
+      doc.moveDown(0.2);
+    };
+
+    //  ENCABEZADO
     doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.5);
-
-    // ── DATOS DEL PEDIDO ────────────────────────────────────
-    doc.fontSize(10);
-    doc.text(`Pedido N°: ${pedido.numero_pedido}`, { continued: true });
-    doc.text(`Fecha: ${pago.created_at.toLocaleDateString('es-AR')}`, { align: 'right' });
-
-    doc.text(`Cliente: ${pedido.nombre_cliente}`, { continued: true });
-    doc.text(`Mesa: ${pedido.mesa.numero}`, { align: 'right' });
-
-    doc.text(`Medio de pago: ${pago.medio_de_pago}`);
-    if (pedido.nota) doc.text(`Nota: ${pedido.nota}`);
-
-    doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.5);
-
-    // ── TABLA DE PRODUCTOS ──────────────────────────────────
-    const colProducto = 50;
-    const colCantidad = 300;
-    const colPrecioU  = 370;
-    const colSubtotal = 460;
-
-    doc.font('Helvetica-Bold');
-    doc.text('Producto',    colProducto, doc.y);
-    doc.text('Cant.',       colCantidad, doc.y - doc.currentLineHeight(), { width: 60, align: 'right' });
-    doc.text('P. Unit.',    colPrecioU,  doc.y - doc.currentLineHeight(), { width: 70, align: 'right' });
-    doc.text('Subtotal',    colSubtotal, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
+    centerText('Cafe Ya', 14, 'Courier-Bold');
     doc.moveDown(0.3);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown(0.3);
+    centerText('Av. Falsa 526', 7.5);
+    centerText('Tel: 381-000-0000', 7.5);
+    doc.moveDown(0.4);
+    separator('=');
 
-    doc.font('Helvetica');
+    //  DATOS DEL PEDIDO
+    const fecha = new Date(pago.created_at).toLocaleString('es-AR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    doc.moveDown(0.2);
+    rowText('Pedido N°:', pedido.numero_pedido);
+    rowText('Fecha:', fecha);
+    rowText('Cliente:', pedido.nombre_cliente);
+    rowText('Mesa:', String(pedido.mesa.numero));
+    rowText('Pago:', pago.medio_de_pago.toUpperCase());
+    doc.moveDown(0.2);
+    separator();
+
+    //  HEADER TABLA
+    doc.moveDown(0.2);
+    const y0 = doc.y;
+    doc.font('Courier-Bold').fontSize(7.5);
+    doc.text('DESCRIPCION',  MARGIN,          y0, { width: 90 });
+    doc.text('UD',           MARGIN + 90,     y0, { width: 25, align: 'center' });
+    doc.text('P.U.',         MARGIN + 115,    y0, { width: 40, align: 'right' });
+    doc.text('IMPORTE',      MARGIN + 155,    y0, { width: 48, align: 'right' });
+    doc.moveDown(0.5);
+    separator();
+
+    //  ITEMS
+    doc.font('Courier').fontSize(7.5);
+
     for (const item of pedido.pedido_producto) {
       const subtotal = item.cantidad * Number(item.precio_unitario);
-      const y = doc.y;
+      const nombre   = item.producto.nombre.length > 13
+        ? item.producto.nombre.substring(0, 12) + '.'
+        : item.producto.nombre;
 
-      doc.text(item.producto.nombre,                    colProducto, y, { width: 240 });
-      doc.text(String(item.cantidad),                   colCantidad, y, { width: 60,  align: 'right' });
-      doc.text(`$${Number(item.precio_unitario).toFixed(2)}`, colPrecioU, y, { width: 70, align: 'right' });
-      doc.text(`$${subtotal.toFixed(2)}`,               colSubtotal, y, { width: 80, align: 'right' });
-      doc.moveDown(0.5);
+      const y = doc.y;
+      doc.text(nombre,                                        MARGIN,       y, { width: 90 });
+      doc.text(String(item.cantidad),                         MARGIN + 90,  y, { width: 25, align: 'center' });
+      doc.text(`$${Number(item.precio_unitario).toFixed(0)}`, MARGIN + 115, y, { width: 40, align: 'right' });
+      doc.text(`$${subtotal.toFixed(0)}`,                     MARGIN + 155, y, { width: 48, align: 'right' });
+      doc.moveDown(0.7);
     }
 
-    // ── TOTALES ─────────────────────────────────────────────
+    doc.moveDown(0.2);
+    separator();
+
+    //  TOTALES
+    doc.moveDown(0.2);
+    rowText('Subtotal:',  `$${Number(pago.monto).toFixed(2)}`);
+    rowText('IVA (21%):', `$${Number(pago.IVA).toFixed(2)}`);
     doc.moveDown(0.3);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    separator('=');
+    doc.moveDown(0.2);
+    rowText('** TOTAL A PAGAR:', `$${Number(pago.monto_final).toFixed(2)} **`, 9, true);
+    doc.moveDown(0.2);
+    separator('=');
+
+    //  PIE
     doc.moveDown(0.5);
-
-    const rightCol = 380;
-    const valueCol = 460;
-
-    doc.font('Helvetica');
-    doc.text('Subtotal:',  rightCol, doc.y, { width: 80, align: 'right' });
-    doc.text(`$${Number(pago.monto).toFixed(2)}`, valueCol, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-    doc.moveDown(0.5);
-
-    doc.text('IVA:',       rightCol, doc.y, { width: 80, align: 'right' });
-    doc.text(`$${Number(pago.IVA).toFixed(2)}`, valueCol, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold');
-    doc.text('TOTAL:',     rightCol, doc.y, { width: 80, align: 'right' });
-    doc.text(`$${Number(pago.monto_final).toFixed(2)}`, valueCol, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
-
-    // ── PIE ─────────────────────────────────────────────────
-    doc.moveDown(2);
-    doc.font('Helvetica').fontSize(9).text('¡Gracias por tu visita!', { align: 'center' });
+    centerText('¡Gracias por su visita!', 8, 'Courier-Bold');
+    doc.moveDown(0.3);
+    centerText('Vuelva pronto :)', 7.5);
+    doc.moveDown(0.3);
+    centerText('Conserve este comprobante', 6.5);
+    doc.moveDown(1);
 
     doc.end();
 
