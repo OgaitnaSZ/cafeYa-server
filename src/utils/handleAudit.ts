@@ -13,6 +13,7 @@ export async function registrarLog(data: {
   descripcion?: string;
   ip?: string;
 }) {
+  console.log(data);
   await prisma.audit_log.create({
     data: {
       usuario_id: data.usuarioId ?? null,

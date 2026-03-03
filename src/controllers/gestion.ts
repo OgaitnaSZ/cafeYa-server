@@ -13,18 +13,18 @@ const FRONTEND_CLIENT_URL = process.env.FRONTEND_CLIENT_URL;
 
 // Usuarios
 export async function obteneUsuarios(req: Request, res: Response) {
-    try {
-        const existingUsers = await prisma.usuario.findMany({where: {is_archived: 0}});
-        
-        if(!existingUsers) return handleHttpError(res, "No hay usuarios", 404)
+  try {
+      const existingUsers = await prisma.usuario.findMany({where: {is_archived: 0}});
+      
+      if(!existingUsers) return handleHttpError(res, "No hay usuarios", 404)
 
-        // Eliminar el atributo password de cada usuario
-        const usersWithoutPassword = existingUsers.map(({ password, ...user }) => user);
+      // Eliminar el atributo password de cada usuario
+      const usersWithoutPassword = existingUsers.map(({ password, ...user }) => user);
 
-        return res.status(200).json(usersWithoutPassword);
-    } catch (err) {
-        return handleHttpError(res, "Error al obtener usuarios", 500)
-    }
+      return res.status(200).json(usersWithoutPassword);
+  } catch (err) {
+      return handleHttpError(res, "Error al obtener usuarios", 500)
+  }
 }
 
 export async function crearUsuario(req: Request, res: Response) {
@@ -42,18 +42,18 @@ export async function crearUsuario(req: Request, res: Response) {
       },
     });
 
-      // Registrar log
-      registrarLog({
-        usuarioId: req.user?.id,
-        nombreUsuario: req.user?.nombre,
-        accion: 'CREATE',
-        rolUsuario: req.user?.rol,
-        entidad: 'Usuario',
-        entidadId: newUser.id,
-        descripcion: `Nuevo usuario ${newUser.nombre}`,
-        ip: req.ip!,
-        despues: { newUser },
-      }).catch(console.error);
+    // Registrar log
+    registrarLog({
+      usuarioId: req.user?.id,
+      nombreUsuario: req.user?.nombre,
+      accion: 'CREATE',
+      rolUsuario: req.user?.rol,
+      entidad: 'Usuario',
+      entidadId: newUser.id,
+      descripcion: `Nuevo usuario ${newUser.nombre}`,
+      ip: req.ip!,
+      despues: newUser,
+    }).catch(console.error);
 
     res.status(201).json(newUser);
   }catch(error){
@@ -93,8 +93,8 @@ export async function actualizarUsuario(req: Request, res: Response) {
       entidadId: updatedUser.id,
       descripcion: `Se modificó el usuario ${updatedUser.nombre}`,
       ip: req.ip!,
-      antes: { dataToUpdate },
-      despues: { updatedUser },
+      antes: dataToUpdate,
+      despues: updatedUser,
     }).catch(console.error);
 
     res.status(200).json(updatedUser);
@@ -142,6 +142,7 @@ export async function eliminarUsuario(req: Request, res: Response) {
         entidad: 'Usuario',
         entidadId: user.id,
         descripcion: `Se eliminó el usuario ${user.nombre}`,
+        antes: user,
         ip: req.ip!,
       }).catch(console.error);
 
@@ -192,7 +193,7 @@ export async function crearMesa(req: Request, res: Response) {
       entidadId: newMesa.mesa_id,
       descripcion: `Se creó una nueva mesa ${newMesa.numero}`,
       ip: req.ip!,
-      despues: { newMesa },
+      despues: newMesa,
     }).catch(console.error);
 
     res.status(201).json(newMesa);
@@ -224,8 +225,8 @@ export async function actualizarMesa(req: Request, res: Response) {
       entidadId: updatedMesa.mesa_id,
       descripcion: `Se modificó la mesa ${updatedMesa.numero}`,
       ip: req.ip!,
-      antes: { dataMesa },
-      despues: { updatedMesa },
+      antes: dataMesa,
+      despues: updatedMesa,
     }).catch(console.error);
 
     res.status(200).json(updatedMesa);
@@ -284,6 +285,7 @@ export async function eliminarMesa(req: Request, res: Response) {
       entidad: 'Mesa',
       entidadId: mesa.mesa_id,
       descripcion: `Se eliminó la mesa ${mesa.numero}`,
+      antes: mesa,
       ip: req.ip!,
     }).catch(console.error);
 
@@ -457,7 +459,7 @@ export async function crearProducto(req: Request, res: Response) {
       entidadId: newProduct.producto_id,
       descripcion: `Nuevo producto ${newProduct.nombre}`,
       ip: req.ip!,
-      despues: { newProduct },
+      despues: newProduct,
     }).catch(console.error);
 
     res.status(201).json(newProduct);
@@ -493,8 +495,8 @@ export async function actualiarProducto(req: Request, res: Response) {
       entidadId: updatedProducto.producto_id,
       descripcion: `Se modificó el producto ${updatedProducto.nombre}`,
       ip: req.ip!,
-      antes: { dataProducto },
-      despues: { updatedProducto },
+      antes: dataProducto,
+      despues: updatedProducto,
     }).catch(console.error);  
     
     res.status(200).json(updatedProducto);
@@ -622,6 +624,7 @@ export async function eliminarProducto(req: Request, res: Response) {
       entidad: 'Producto',
       entidadId: producto.producto_id,
       descripcion: `Se eliminó el producto ${producto.nombre}`,
+      antes: producto,
       ip: req.ip!,
     }).catch(console.error);
 
@@ -671,8 +674,7 @@ export async function subirFoto(req: Request, res: Response) {
           entidadId: existingProduct.producto_id,
           descripcion: `Se modificó la foto del producto ${existingProduct.nombre}`,
           ip: req.ip!,
-          antes: { existingProduct },
-          despues: { data },
+          despues: data,
         }).catch(console.error);
         
         return res.status(201).send(data);
@@ -718,6 +720,18 @@ export async function crearCategoria(req: Request, res: Response) {
       },
     });
 
+    registrarLog({
+      usuarioId: req.user?.id,
+      nombreUsuario: req.user?.nombre,
+      accion: 'CREATE',
+      rolUsuario: req.user?.rol,
+      entidad: 'Categoria',
+      entidadId: newCategoria.categoria_id.toString(),
+      descripcion: `Nueva categoría ${newCategoria.nombre}`,
+      ip: req.ip!,
+      despues: newCategoria,
+    }).catch(console.error);
+
     res.status(201).json(newCategoria);
   }catch(error){
     return handleHttpError(res, "Error al crear el categoria", 500);
@@ -748,8 +762,8 @@ export async function actualizarCategoria(req: Request, res: Response) {
       entidadId: updatedCategoria.categoria_id.toString(),
       descripcion: `Se modificó la categoría ${updatedCategoria.nombre}`,
       ip: req.ip!,
-      antes: { dataCategoria },
-      despues: { updatedCategoria },
+      antes: dataCategoria,
+      despues: updatedCategoria,
     }).catch(console.error);
 
     res.status(200).json(updatedCategoria);
@@ -793,6 +807,7 @@ export async function eliminarCategoria(req: Request, res: Response) {
           entidad: 'Categoria',
           entidadId: categoria.categoria_id.toString(),
           descripcion: `Se eliminó la categoría ${categoria.nombre}`,
+          antes: categoria,
           ip: req.ip!,
         }).catch(console.error);
 
@@ -874,6 +889,7 @@ export async function eliminarCliente(req: Request, res: Response) {
       entidad: 'Cliente',
       entidadId: cliente.cliente_id,
       descripcion: `Se eliminó el cliente ${cliente.nombre}`,
+      antes: cliente,
       ip: req.ip!,
     }).catch(console.error);
 
@@ -1581,6 +1597,25 @@ export async function obtenerCalendario(req: Request, res: Response) {
   } catch (error) {
     console.error(error);
     handleHttpError(res, "Error al obtener calendario", 500);
+  }
+}
+
+// Logs
+export async function obtenerAuditLog(req: Request, res: Response) {
+  try {
+    const logs = await prisma.audit_log.findMany({
+      orderBy: [
+        { created_at: 'desc' },
+        { id: 'desc' }
+      ]
+    });
+    
+    if(!logs) return handleHttpError(res, "No hay registros", 404)
+
+    return res.status(200).json(logs);
+  }catch (err) {
+    console.log(err);
+    return handleHttpError(res, "Error al obtener registros", 500)
   }
 }
 

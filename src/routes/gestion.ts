@@ -121,4 +121,7 @@ router.get("/dashboard", encargadoOrAdmin, gestion.obtenerDashboard);
 router.get("/reportes/resumen", encargadoOrAdmin, validator.validatorReporteResumen, gestion.obtenerReportesResumen);
 router.get("/reportes/calendario", encargadoOrAdmin, validator.validatorCalendario, gestion.obtenerCalendario);
 
+/* --- LOGS --- */
+router.get("/audit-log", adminOnly, gestion.obtenerAuditLog);
+
 export { router };
