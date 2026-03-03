@@ -42,6 +42,7 @@ export async function crearUsuario(req: Request, res: Response) {
       },
     });
 
+
     // Registrar log
     registrarLog({
       usuarioId: req.user?.id,
