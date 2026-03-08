@@ -301,9 +301,13 @@ export async function eliminarMesa(req: Request, res: Response) {
 // Obtener pedidos
 export async function obtenerPedidos(req: Request, res: Response) {
 try {
-    const { cliente_id, mesa_id, estado, fecha_desde, fecha_hasta, search } = req.query;
+    const { pedido_id, cliente_id, mesa_id, estado, fecha_desde, fecha_hasta, search } = req.query;
     
     const where: any = {};
+
+    if (pedido_id) {
+      where.pedido_id = pedido_id;
+    }
 
     if (cliente_id) {
       where.cliente_id = cliente_id;
