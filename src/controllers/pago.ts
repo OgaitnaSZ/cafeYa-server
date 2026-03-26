@@ -70,7 +70,7 @@ export async function crearPago(req: Request, res: Response) {
                     pedido_id: dataPago.pedido_id,
                     medio_de_pago: dataPago.medio_pago,
                     monto: monto,
-                    IVA: iva,
+                    iva: iva,
                     monto_final: montoFinal
                 },
             });
@@ -225,7 +225,7 @@ export async function generarRecibo(req: Request, res: Response) {
     //  TOTALES
     doc.moveDown(0.2);
     rowText('Subtotal:',  `$${Number(pago.monto).toFixed(2)}`);
-    rowText('IVA (21%):', `$${Number(pago.IVA).toFixed(2)}`);
+    rowText('IVA (21%):', `$${Number(pago.iva).toFixed(2)}`);
     doc.moveDown(0.3);
     separator('=');
     doc.moveDown(0.2);

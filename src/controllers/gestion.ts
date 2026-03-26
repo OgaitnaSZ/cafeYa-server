@@ -14,7 +14,7 @@ const FRONTEND_CLIENT_URL = process.env.FRONTEND_CLIENT_URL;
 // Usuarios
 export async function obteneUsuarios(req: Request, res: Response) {
   try {
-      const existingUsers = await prisma.usuario.findMany({where: {is_archived: 0}});
+      const existingUsers = await prisma.usuario.findMany({where: {is_archived: false}});
       
       if(!existingUsers) return handleHttpError(res, "No hay usuarios", 404)
 
@@ -115,11 +115,11 @@ export async function eliminarUsuario(req: Request, res: Response) {
       
       if (!user) return handleHttpError(res, "ID del usuario incorrecto", 404);
 
-      if (user.rol === "admin" && user.is_archived === 0) {
+      if (user.rol === "admin" && user.is_archived === false) {
         const activeAdminsCount = await prisma.usuario.count({
           where: {
             rol: "admin",
-            is_archived: 0
+            is_archived: false
           }
         });
   
@@ -130,7 +130,7 @@ export async function eliminarUsuario(req: Request, res: Response) {
       const deletedUser = await prisma.usuario.update({
         where: { id },
         data: { 
-          is_archived: 1
+          is_archived: true
         }
       });
 

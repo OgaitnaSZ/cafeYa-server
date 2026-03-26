@@ -3,154 +3,144 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+model audit_log {
+  id             Int              @id @default(autoincrement())
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  usuario_id     String           @db.Uuid
+  nombre_usuario String           @db.VarChar(255)
+  rol_usuario    String           @db.VarChar(100)
+  accion         audit_log_accion
+  entidad        String           @db.VarChar(100)
+  entidad_id     String           @db.VarChar(100)
+  cambios        Json
+  descripcion    String
+  ip             String           @db.VarChar(45)
+  user_agent     String           @db.VarChar(255)
+  usuario        usuario          @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
 model calificacion {
-  id             String   @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  pedido_id      String   @db.Char(36)
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pedido_id      String   @db.Uuid
   puntuacion     Int
-  resena         String?  @db.Text
-  created_at     DateTime @default(now()) @db.Timestamp(0)
+  resena         String?
+  created_at     DateTime @default(now()) @db.Timestamp(6)
   nombre_cliente String   @db.VarChar(255)
-  pedido         pedido   @relation(fields: [pedido_id], references: [pedido_id], onUpdate: Restrict, map: "calificacion_ibfk_1")
-
-  @@index([pedido_id], map: "idx_calificacion_pedido")
-}
-
-model cliente {
-  cliente_id       String   @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  nombre           String   @db.VarChar(255)
-  telefono         String?  @db.VarChar(20)
-  email            String?  @db.VarChar(255)
-  duracion_minutos Int?     @db.TinyInt
-  created_at       DateTime @default(dbgenerated("(now())")) @db.Timestamp(0)
-  pedido           pedido[]
-}
-
-model mesa {
-  mesa_id     String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  numero      Int?        @unique(map: "uq_mesa_numero")
-  codigo      String      @db.Char(4)
-  estado      mesa_estado @default(Disponible)
-  created_at  DateTime    @default(now()) @db.Timestamp(0)
-  updated_at  DateTime    @default(now()) @db.Timestamp(0)
-  is_archived Boolean?
-  pedido      pedido[]
-}
-
-model pago {
-  pago_id       String             @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  pedido_id     String             @db.Char(36)
-  medio_de_pago pago_medio_de_pago
-  monto         Decimal            @db.Decimal(10, 2)
-  IVA           Decimal            @db.Decimal(10, 2)
-  monto_final   Decimal            @db.Decimal(10, 2)
-  created_at    DateTime           @default(now()) @db.Timestamp(0)
-  pedido        pedido             @relation(fields: [pedido_id], references: [pedido_id], onUpdate: Restrict, map: "pago_ibfk_1")
-
-  @@index([pedido_id], map: "idx_pago_pedido")
-}
-
-model pedido {
-  pedido_id       String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  numero_pedido   String            @unique @db.VarChar(20)
-  cliente_id      String            @db.Char(36)
-  nombre_cliente  String            @db.VarChar(255)
-  mesa_id         String            @db.Char(36)
-  nota            String?           @db.Text
-  precio_total    Decimal           @db.Decimal(10, 2)
-  estado          pedido_estado     @default(Pendiente)
-  created_at      DateTime          @default(now()) @db.Timestamp(0)
-  pedido_padre    String?           @db.Char(36)
-  calificacion    calificacion[]
-  pago            pago[]
-  cliente         cliente           @relation(fields: [cliente_id], references: [cliente_id], map: "fk_pedido_cliente")
-  mesa            mesa              @relation(fields: [mesa_id], references: [mesa_id], map: "pedido_ibfk_1")
-  pedido          pedido?           @relation("pedidoTopedido", fields: [pedido_padre], references: [pedido_id], onUpdate: Restrict, map: "pedido_ibfk_2")
-  other_pedido    pedido[]          @relation("pedidoTopedido")
-  pedido_producto pedido_producto[]
-
-  @@index([estado], map: "idx_pedido_estado")
-  @@index([created_at], map: "idx_pedido_fecha")
-  @@index([mesa_id], map: "idx_pedido_mesa")
-  @@index([pedido_padre], map: "idx_pedido_padre")
-  @@index([cliente_id], map: "fk_pedido_cliente")
-  @@index([numero_pedido], map: "idx_numero_pedido")
-}
-
-model pedido_producto {
-  pedido_producto_id Int      @id @default(autoincrement())
-  pedido_id          String   @db.Char(36)
-  producto_id        String   @db.Char(36)
-  cantidad           Int      @default(1)
-  precio_unitario    Decimal  @db.Decimal(10, 2)
-  pedido             pedido   @relation(fields: [pedido_id], references: [pedido_id], onDelete: Cascade, onUpdate: Restrict, map: "pedido_producto_ibfk_1")
-  producto           producto @relation(fields: [producto_id], references: [producto_id], onUpdate: Restrict, map: "pedido_producto_ibfk_2")
-
-  @@index([pedido_id], map: "pedido_id")
-  @@index([producto_id], map: "producto_id")
-}
-
-model producto {
-  producto_id     String            @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  nombre          String            @db.VarChar(255)
-  descripcion     String            @db.Text
-  categoria_id    Int
-  imagen_url      String?           @db.VarChar(500)
-  precio_unitario Decimal           @db.Decimal(10, 2)
-  created_at      DateTime          @default(now()) @db.Timestamp(0)
-  updated_at      DateTime          @default(now()) @db.Timestamp(0)
-  destacado       Boolean?          @default(false)
-  estado          producto_estado   @default(Inactivo)
-  stock           Int               @default(0)
-  is_archived     Boolean?          @default(false)
-  pedido_producto pedido_producto[]
-  categoria       categoria         @relation(fields: [categoria_id], references: [categoria_id], onUpdate: Restrict, map: "producto_ibfk_1")
-
-  @@index([estado], map: "idx_producto_estado")
-  @@index([categoria_id], map: "categoria_id")
-}
-
-model usuario {
-  id          String      @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  nombre      String      @db.VarChar(255)
-  email       String      @unique(map: "email") @db.VarChar(255)
-  password    String      @db.VarChar(255)
-  rol         usuario_rol
-  created_at  DateTime    @default(now()) @db.Timestamp(0)
-  updated_at  DateTime    @default(now()) @db.Timestamp(0)
-  is_archived Int?        @default(0) @db.TinyInt
-  audit_log   audit_log[]
+  pedido         pedido   @relation(fields: [pedido_id], references: [pedido_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model categoria {
   categoria_id Int        @id @default(autoincrement())
   nombre       String     @db.VarChar(100)
   emoji        String     @db.VarChar(10)
-  created_at   DateTime   @default(now()) @db.Timestamp(0)
+  created_at   DateTime   @default(now()) @db.Timestamp(6)
   producto     producto[]
 }
 
-model audit_log {
-  id             Int              @id @default(autoincrement())
-  created_at     DateTime         @default(now()) @db.DateTime(0)
-  usuario_id     String?          @db.VarChar(36)
-  nombre_usuario String?          @db.VarChar(255)
-  rol_usuario    String?          @db.VarChar(100)
-  accion         audit_log_accion
-  entidad        String           @db.VarChar(100)
-  entidad_id     String           @db.VarChar(100)
-  cambios        Json?
-  descripcion    String?          @db.Text
-  ip             String?          @db.VarChar(45)
-  user_agent     String?          @db.VarChar(255)
-  usuario        usuario?         @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_audit_usuario")
+model cliente {
+  cliente_id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nombre           String   @db.VarChar(255)
+  telefono         String?  @db.VarChar(20)
+  email            String?  @db.VarChar(255)
+  duracion_minutos Int
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  pedido           pedido[]
+}
 
-  @@index([created_at], map: "idx_created_at")
-  @@index([entidad, entidad_id], map: "idx_entidad_entidad_id")
-  @@index([usuario_id], map: "idx_usuario_id")
+model mesa {
+  mesa_id     String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  numero      Int?        @unique
+  codigo      String      @db.Char(4)
+  estado      mesa_estado @default(Disponible)
+  created_at  DateTime    @default(now()) @db.Timestamp(6)
+  updated_at  DateTime    @default(now()) @db.Timestamp(6)
+  is_archived Boolean     @default(false)
+  pedido      pedido[]
+}
+
+model pago {
+  pago_id       String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pedido_id     String             @db.Uuid
+  medio_de_pago pago_medio_de_pago
+  monto         Decimal            @db.Decimal(10, 2)
+  iva           Decimal            @db.Decimal(10, 2)
+  monto_final   Decimal            @db.Decimal(10, 2)
+  created_at    DateTime           @default(now()) @db.Timestamp(6)
+  pedido        pedido             @relation(fields: [pedido_id], references: [pedido_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pedido {
+  pedido_id       String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  numero_pedido   String            @unique @db.VarChar(20)
+  cliente_id      String            @db.Uuid
+  nombre_cliente  String            @db.VarChar(255)
+  mesa_id         String            @db.Uuid
+  nota            String?
+  precio_total    Decimal           @db.Decimal(10, 2)
+  estado          pedido_estado     @default(Pendiente)
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  pedido_padre    String?           @db.Uuid
+  calificacion    calificacion[]
+  pago            pago[]
+  cliente         cliente           @relation(fields: [cliente_id], references: [cliente_id], onDelete: NoAction, onUpdate: NoAction)
+  mesa            mesa              @relation(fields: [mesa_id], references: [mesa_id], onDelete: NoAction, onUpdate: NoAction)
+  pedido          pedido?           @relation("pedidoTopedido", fields: [pedido_padre], references: [pedido_id], onDelete: NoAction, onUpdate: NoAction)
+  other_pedido    pedido[]          @relation("pedidoTopedido")
+  pedido_producto pedido_producto[]
+}
+
+model pedido_producto {
+  pedido_producto_id Int      @id @default(autoincrement())
+  pedido_id          String   @db.Uuid
+  producto_id        String   @db.Uuid
+  cantidad           Int      @default(1)
+  precio_unitario    Decimal  @db.Decimal(10, 2)
+  pedido             pedido   @relation(fields: [pedido_id], references: [pedido_id], onDelete: Cascade, onUpdate: NoAction)
+  producto           producto @relation(fields: [producto_id], references: [producto_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model producto {
+  producto_id     String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nombre          String            @db.VarChar(255)
+  descripcion     String
+  categoria_id    Int
+  imagen_url      String?           @db.VarChar(500)
+  precio_unitario Decimal           @db.Decimal(10, 2)
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  updated_at      DateTime          @default(now()) @db.Timestamp(6)
+  destacado       Boolean           @default(false)
+  estado          producto_estado   @default(Inactivo)
+  stock           Int               @default(0)
+  is_archived     Boolean           @default(false)
+  pedido_producto pedido_producto[]
+  categoria       categoria         @relation(fields: [categoria_id], references: [categoria_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model usuario {
+  id          String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nombre      String      @db.VarChar(255)
+  email       String      @unique @db.VarChar(255)
+  password    String      @db.VarChar(255)
+  rol         usuario_rol
+  created_at  DateTime    @default(now()) @db.Timestamp(6)
+  updated_at  DateTime    @default(now()) @db.Timestamp(6)
+  is_archived Boolean     @default(false)
+  audit_log   audit_log[]
+}
+
+enum audit_log_accion {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum mesa_estado {
+  Disponible
+  Ocupada
 }
 
 enum pago_medio_de_pago {
@@ -159,22 +149,11 @@ enum pago_medio_de_pago {
   efectivo
 }
 
-enum usuario_rol {
-  encargado
-  cocina
-  admin
-}
-
 enum pedido_estado {
   Pendiente
-  En_preparacion @map("En_preparacion")
+  En_preparacion
   Listo
   Entregado
-}
-
-enum mesa_estado {
-  Disponible
-  Ocupada
 }
 
 enum producto_estado {
@@ -182,8 +161,8 @@ enum producto_estado {
   Inactivo
 }
 
-enum audit_log_accion {
-  CREATE
-  UPDATE
-  DELETE
+enum usuario_rol {
+  encargado
+  cocina
+  admin
 }
