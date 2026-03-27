@@ -306,15 +306,15 @@ try {
     const where: any = {};
 
     if (pedido_id) {
-      where.pedido_id = pedido_id;
+      where.pedido_id = String(pedido_id);
     }
 
     if (cliente_id) {
-      where.cliente_id = cliente_id;
+      where.cliente_id = String(cliente_id);
     }
 
     if (mesa_id) {
-      where.mesa_id = mesa_id;
+      where.mesa_id = String(mesa_id);
     }
 
     if (estado && estado !== 'todos') {
@@ -329,9 +329,13 @@ try {
     }
 
     if (search) {
-      where.OR = [
-        { notas: { contains: search, mode: 'insensitive' } },
-        { codigo_referencia: { contains: search, mode: 'insensitive' } }
+      where.AND = [
+        {
+          OR: [
+            { nota: { contains: search, mode: 'insensitive' } },
+            { cliente: { nombre: { contains: search, mode: 'insensitive' } } },
+          ]
+        }
       ];
     }
     
@@ -1313,7 +1317,6 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
   try {
     const { from, to } = req.query as { from?: string; to?: string };
 
-    // Default: últimos 7 días
     const today = new Date();
     const defaultTo   = today.toISOString().slice(0, 10);
     const defaultFrom = new Date(today.getTime() - 6 * 86_400_000)
@@ -1327,7 +1330,6 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
     const toDate   = arDateToUTC(toStr, true);
     const { prevFrom, prevTo } = periodoAnterior(fromDate, toDate);
 
-    // Todas las queries en paralelo
     const [
       kpiActual,
       kpiAnterior,
@@ -1352,7 +1354,7 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
           AND p.pedido_padre IS NULL
       `,
 
-      // KPIs período anterior (para variación)
+      // KPIs período anterior
       prisma.$queryRaw<RawKpi[]>`
         SELECT
           SUM(pg.monto_final)                        AS recaudado,
@@ -1367,18 +1369,17 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
       `,
 
       // Serie temporal día a día
-      // Usada tanto para el gráfico de línea como para el calendario
       prisma.$queryRaw<RawDiaSerie[]>`
         SELECT
-          DATE(CONVERT_TZ(p.created_at, '+00:00', '-03:00')) AS fecha,
-          COUNT(DISTINCT p.pedido_id)                         AS pedidos,
-          COUNT(DISTINCT p.cliente_id)                        AS clientes,
-          COALESCE(SUM(pg.monto_final), 0)                    AS recaudado
+          (p.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS fecha,
+          COUNT(DISTINCT p.pedido_id)                                                            AS pedidos,
+          COUNT(DISTINCT p.cliente_id)                                                           AS clientes,
+          COALESCE(SUM(pg.monto_final), 0)                                                       AS recaudado
         FROM pedido p
         LEFT JOIN pago pg ON pg.pedido_id = p.pedido_id
         WHERE p.created_at BETWEEN ${fromDate} AND ${toDate}
           AND p.pedido_padre IS NULL
-        GROUP BY DATE(CONVERT_TZ(p.created_at, '+00:00', '-03:00'))
+        GROUP BY (p.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
         ORDER BY fecha ASC
       `,
 
@@ -1420,15 +1421,15 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
         GROUP BY estado
       `,
 
-      // Horas pico (promedio por hora del día)
+      // Horas pico
       prisma.$queryRaw<RawHora[]>`
         SELECT
-          HOUR(CONVERT_TZ(created_at, '+00:00', '-03:00')) AS hora,
-          COUNT(*)                                          AS pedidos
+          EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires'))::int AS hora,
+          COUNT(*)                                                                                               AS pedidos
         FROM pedido
         WHERE created_at BETWEEN ${fromDate} AND ${toDate}
           AND pedido_padre IS NULL
-        GROUP BY HOUR(CONVERT_TZ(created_at, '+00:00', '-03:00'))
+        GROUP BY EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires'))
         ORDER BY hora ASC
       `,
     ]);
@@ -1438,15 +1439,17 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
     const kpiP = kpiAnterior[0];
 
     const recaudadoActual = Number(kpiA!.recaudado ?? 0);
-    const pedidosActual = Number(kpiA!.pedidos ?? 0);
-    const clientesActual = Number(kpiA!.clientes ?? 0);
-    const califActual = kpiA!.calificacion ? Number(Number(kpiA!.calificacion).toFixed(1)) : null;
-    const ticketActual = pedidosActual > 0 ? recaudadoActual / pedidosActual : 0;
+    const pedidosActual   = Number(kpiA!.pedidos   ?? 0);
+    const clientesActual  = Number(kpiA!.clientes  ?? 0);
+    const califActual     = kpiA!.calificacion
+      ? Number(Number(kpiA!.calificacion).toFixed(1))
+      : null;
+    const ticketActual    = pedidosActual > 0 ? recaudadoActual / pedidosActual : 0;
 
     const recaudadoAnterior = Number(kpiP!.recaudado ?? 0);
-    const pedidosAnterior = Number(kpiP!.pedidos ?? 0);
-    const clientesAnterior = Number(kpiP!.clientes ?? 0);
-    const ticketAnterior = pedidosAnterior > 0 ? recaudadoAnterior / pedidosAnterior : 0;
+    const pedidosAnterior   = Number(kpiP!.pedidos   ?? 0);
+    const clientesAnterior  = Number(kpiP!.clientes  ?? 0);
+    const ticketAnterior    = pedidosAnterior > 0 ? recaudadoAnterior / pedidosAnterior : 0;
 
     const variacion = (actual: number, anterior: number) =>
       anterior > 0
@@ -1454,12 +1457,13 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
         : null;
 
     // Normalizar serie temporal
+    // PostgreSQL devuelve ::date como objeto Date, no como string
     const serie = serieTemporal.map((row) => ({
       fecha: row.fecha instanceof Date
         ? row.fecha.toISOString().slice(0, 10)
         : String(row.fecha).slice(0, 10),
-      pedidos: Number(row.pedidos),
-      clientes: Number(row.clientes),
+      pedidos:   Number(row.pedidos),
+      clientes:  Number(row.clientes),
       recaudado: Number(row.recaudado ?? 0),
     }));
 
@@ -1470,10 +1474,10 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
 
     const top = topProductos.map((p) => ({
       producto_id: p.producto_id,
-      nombre: p.nombre,
-      cantidad: Number(p.cantidad),
-      total: Number(p.total),
-      porcentaje: Math.round((Number(p.cantidad) / maxCantidad) * 100),
+      nombre:      p.nombre,
+      cantidad:    Number(p.cantidad),
+      total:       Number(p.total),
+      porcentaje:  Math.round((Number(p.cantidad) / maxCantidad) * 100),
     }));
 
     // Normalizar pagos
@@ -1489,67 +1493,51 @@ export async function obtenerReportesResumen(req: Request, res: Response) {
       estadoMap[row.estado] = Number(row.count);
     }
     const estados = {
-      Pendiente: estadoMap["Pendiente"] ?? 0,
-      En_preparacion: estadoMap["En_preparacion"] ?? 0,
-      Listo: estadoMap["Listo"] ?? 0,
-      Entregado: estadoMap["Entregado"] ?? 0,
-      Cancelado: estadoMap["Cancelado"] ?? 0,
+      Pendiente:       estadoMap["Pendiente"]       ?? 0,
+      En_preparacion:  estadoMap["En_preparacion"]  ?? 0,
+      Listo:           estadoMap["Listo"]           ?? 0,
+      Entregado:       estadoMap["Entregado"]       ?? 0,
+      Cancelado:       estadoMap["Cancelado"]       ?? 0,
     };
 
     // Normalizar horas pico
+    // EXTRACT devuelve numeric en PG, el ::int del SQL ya lo convierte pero Number() por las dudas
     const maxPedidosHora = horasPico.length > 0
       ? Math.max(...horasPico.map((h) => Number(h.pedidos)))
       : 1;
 
     const horas = horasPico.map((h) => ({
-      hora: Number(h.hora),
-      pedidos: Number(h.pedidos),
+      hora:      Number(h.hora),
+      pedidos:   Number(h.pedidos),
       intensity: Number(h.pedidos) / maxPedidosHora,
     }));
 
-    // Response
     res.status(200).json({
-      // Metadata del período
-      periodo: { from: fromStr, to: toStr },
-
-      // KPIs actuales
+      periodo:      { from: fromStr, to: toStr },
       kpis: {
-        recaudado: Number(recaudadoActual.toFixed(2)),
-        pedidos: pedidosActual,
-        clientes:clientesActual,
-        ticket: Number(ticketActual.toFixed(2)),
+        recaudado:    Number(recaudadoActual.toFixed(2)),
+        pedidos:      pedidosActual,
+        clientes:     clientesActual,
+        ticket:       Number(ticketActual.toFixed(2)),
         calificacion: califActual,
       },
-
-      // Variaciones vs período anterior
       variaciones: {
         recaudado: variacion(recaudadoActual, recaudadoAnterior),
-        pedidos: variacion(pedidosActual, pedidosAnterior),
-        clientes: variacion(clientesActual, clientesAnterior),
-        ticket: variacion(ticketActual, ticketAnterior),
+        pedidos:   variacion(pedidosActual,   pedidosAnterior),
+        clientes:  variacion(clientesActual,  clientesAnterior),
+        ticket:    variacion(ticketActual,    ticketAnterior),
       },
-
-      // Serie temporal día a día (para gráfico de línea)
       serie,
-
-      // Top productos
       topProductos: top,
-
-      // Medios de pago
       pagos,
-
-      // Pedidos por estado
       estados,
-
-      // Horas pico
-      horasPico: horas,
+      horasPico:    horas,
     });
   } catch (error) {
     console.error(error);
     handleHttpError(res, "Error al obtener reportes", 500);
   }
 }
-
 export async function obtenerCalendario(req: Request, res: Response) {
   try {
     const today = new Date();
