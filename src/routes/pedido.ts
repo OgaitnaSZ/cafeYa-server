@@ -6,4 +6,7 @@ import * as validator from "../validators/pedido";
 // Crear pedido
 router.post("/crear", validator.validatorNuevoPedido, pedido.crearPedido);
 
+// Sincronizar estado pedido
+router.post("/sincronizar-estado", validator.validatorEstadosPedidos, pedido.sincronizarEstado);
+
 export { router };

@@ -28,3 +28,15 @@ export const validatorNuevoPedido = [
 
   (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
 ];
+
+export const validatorEstadosPedidos = [
+  check("pedido_ids")
+    .isArray({ min: 1, max: 10 })
+    .withMessage('pedido_ids debe ser un array de entre 1 y 10 elementos'),
+
+  check("pedido_ids.*")
+    .isUUID(4)
+    .withMessage('Cada pedido_id debe ser un UUID válido'),
+
+  (req: Request, res: Response, next: NextFunction) => validateResults(req, res, next)
+];

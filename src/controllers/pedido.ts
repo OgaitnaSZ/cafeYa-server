@@ -83,6 +83,24 @@ export async function crearPedido(req: Request, res: Response) {
   }
 }
 
+// Sincronizar estado
+export async function sincronizarEstado(req: Request, res: Response) {
+  try {
+    const { pedido_ids } = req.body as { pedido_ids: string[] };
+
+    if (!pedido_ids?.length) return res.status(200).json([]);
+
+    const pedidos = await prisma.pedido.findMany({
+      where: { pedido_id: { in: pedido_ids } },
+      select: { pedido_id: true, estado: true }
+    });
+
+    res.status(200).json(pedidos);
+  } catch (error) {
+    handleHttpError(res, "Error al obtener estados", 500);
+  }
+}
+
 // Helpers
 export async function generarNumeroPedido(): Promise<string> {
   const hoy = new Date();
