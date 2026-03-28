@@ -301,7 +301,11 @@ export async function eliminarMesa(req: Request, res: Response) {
 // Obtener pedidos
 export async function obtenerPedidos(req: Request, res: Response) {
 try {
-    const { pedido_id, cliente_id, mesa_id, estado, fecha_desde, fecha_hasta, search } = req.query;
+    const { pedido_id, cliente_id, mesa_id, estado, fecha_desde, fecha_hasta, search, page = '1', limit = '20' } = req.query;
+
+    const pageNum  = Math.max(1, parseInt(page  as string, 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10)));
+    const skip     = (pageNum - 1) * limitNum;
     
     const where: any = {};
 
@@ -309,18 +313,9 @@ try {
       where.pedido_id = String(pedido_id);
     }
 
-    if (cliente_id) {
-      where.cliente_id = String(cliente_id);
-    }
-
-    if (mesa_id) {
-      where.mesa_id = String(mesa_id);
-    }
-
-    if (estado && estado !== 'todos') {
-      where.estado = estado;
-    }
-
+    if (cliente_id) where.cliente_id = String(cliente_id);
+    if (mesa_id) where.mesa_id = String(mesa_id);
+    if (estado && estado !== 'todos') where.estado = estado;
     if (fecha_desde || fecha_hasta) {
       where.created_at = {
         ...(fecha_desde && { gte: fecha_desde }),
@@ -339,18 +334,21 @@ try {
       ];
     }
     
-    const pedidos = await prisma.pedido.findMany({
-      where,
-      orderBy: {
-        created_at: 'desc'
-      },
-      include: {
-        cliente: true,
-        mesa: true
-      }
-    });
+    const include = { cliente: true, mesa: true };
+    const orderBy = { created_at: 'desc' as const };
 
-    return res.status(200).json(pedidos);
+    const [pedidos, total] = await prisma.$transaction([
+      prisma.pedido.findMany({ where, include, orderBy, skip, take: limitNum }),
+      prisma.pedido.count({ where })
+    ]);
+
+    return res.status(200).json({
+      data: pedidos,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
 
   } catch (err) {
     console.error(err);
@@ -829,43 +827,45 @@ export async function eliminarCategoria(req: Request, res: Response) {
 // Clientes
 export async function obtenerClientes(req: Request, res: Response) {
   try {
-    const clientes = await prisma.cliente.findMany({
-      include: {
-        _count: {
-          select: { pedido: true }
-        },
-        pedido: {
-          select: {
-            precio_total: true,
-            created_at: true
-          },
-          orderBy: { created_at: 'desc' }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+    const { page = '1', limit = '20' } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page  as string, 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const include = {
+      _count: { select: { pedido: true } },
+      pedido: {
+        select: { precio_total: true, created_at: true },
+        orderBy: { created_at: 'desc' as const }
+      }
+    };
+
+    const [clientes, total] = await prisma.$transaction([
+      prisma.cliente.findMany({ include, orderBy: { created_at: 'desc' }, skip, take: limitNum }),
+      prisma.cliente.count()
+    ]);
 
     // Calcular stats
-    const clientesConStats = clientes.map(cliente => {
-      const total_gastado = cliente.pedido.reduce( (sum, p) => sum.add(p.precio_total), new Prisma.Decimal(0) );
-      const ultimo_pedido = cliente.pedido.length > 0 ? cliente.pedido[0]!.created_at : null;
+    const clientesConStats = clientes.map(cliente => ({
+      cliente_id: cliente.cliente_id,
+      nombre: cliente.nombre,
+      email: cliente.email,
+      telefono: cliente.telefono,
+      duracion_minutos: cliente.duracion_minutos,
+      created_at: cliente.created_at,
+      _count: { pedidos: cliente._count.pedido },
+      total_gastado: cliente.pedido.reduce((sum, p) => sum.add(p.precio_total), new Prisma.Decimal(0)),
+      ultimo_pedido: cliente.pedido.length > 0 ? cliente.pedido[0]!.created_at : null
+    }));
 
-      return {
-        cliente_id: cliente.cliente_id,
-        nombre: cliente.nombre,
-        email: cliente.email,
-        telefono: cliente.telefono,
-        duracion_minutos: cliente.duracion_minutos,
-        created_at: cliente.created_at,
-        _count: {
-          pedidos: cliente._count.pedido
-        },
-        total_gastado,
-        ultimo_pedido
-      };
+    res.status(200).json({
+      data: clientesConStats,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
     });
-
-    res.status(200).json(clientesConStats);
   } catch (error) {
     handleHttpError(res, "Error al obtener clientes", 500);
   }
@@ -910,17 +910,17 @@ export async function eliminarCliente(req: Request, res: Response) {
 // Obtener calificaciones
 export async function obtenerCalificaciones(req: Request, res: Response) {
   try {
-    const { pedido_id, search, puntuacion } = req.query;
+    const { pedido_id, search, puntuacion, page = '1', limit = '12' } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page as string, 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10)));
+    const skip = (pageNum - 1) * limitNum;
 
     let whereClause: any = {};
 
-    if (pedido_id) {
-      whereClause.pedido_id = pedido_id as string;
-    }
+    if (pedido_id) whereClause.pedido_id = pedido_id as string;
 
-    if (puntuacion) {
-      whereClause.puntuacion = parseInt(puntuacion as string);
-    }
+    if (puntuacion) whereClause.puntuacion = parseInt(puntuacion as string);
 
     if (search) {
       whereClause.nombre_cliente = {
@@ -929,26 +929,27 @@ export async function obtenerCalificaciones(req: Request, res: Response) {
       };
     }
 
-    const calificaciones = await prisma.calificacion.findMany({
-      where: whereClause,
-      include: {
-        pedido: {
-          select: {
-            pedido_id: true,
-            numero_pedido: true,
-            precio_total: true,
-            mesa: {
-              select: {
-                numero: true
-              }
-            }
-          }
+    const include = {
+      pedido: {
+        select: {
+          pedido_id: true, numero_pedido: true, precio_total: true,
+          mesa: { select: { numero: true } }
         }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+      }
+    };
 
-    res.status(200).json(calificaciones);
+    const [calificaciones, total] = await prisma.$transaction([
+      prisma.calificacion.findMany({ where: whereClause, include, orderBy: { created_at: 'desc' }, skip, take: limitNum }),
+      prisma.calificacion.count({ where: whereClause })
+    ]);
+
+    res.status(200).json({
+      data: calificaciones,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
   } catch (error) {
     handleHttpError(res, "Error al obtener calificaciones", 500);
   }
@@ -957,50 +958,48 @@ export async function obtenerCalificaciones(req: Request, res: Response) {
 // Pagos
 export async function obtenerPagos(req: Request, res: Response) {
   try {
-    const { pedido_id, medio_de_pago, fecha_desde, fecha_hasta } = req.query;
+    const { pedido_id, medio_de_pago, fecha_desde, fecha_hasta, page = '1', limit = '20' } = req.query;
+
+    const pageNum   = Math.max(1, parseInt(page  as string, 10));
+    const limitNum  = Math.min(100, Math.max(1, parseInt(limit as string, 10)));
+    const skip      = (pageNum - 1) * limitNum;
 
     let whereClause: any = {};
 
-    if (pedido_id) {
-      whereClause.pedido_id = pedido_id as string;
-    }
+    if (pedido_id)  whereClause.pedido_id = pedido_id as string;
 
-    if (medio_de_pago) {
-      whereClause.medio_de_pago = medio_de_pago as string;
-    }
+    if (medio_de_pago) whereClause.medio_de_pago = medio_de_pago as string;
 
     if (fecha_desde || fecha_hasta) {
       whereClause.created_at = {};
-      if (fecha_desde) {
-        whereClause.created_at.gte = new Date(fecha_desde as string);
-      }
-      if (fecha_hasta) {
-        whereClause.created_at.lte = new Date(fecha_hasta as string);
-      }
+      if (fecha_desde) whereClause.created_at.gte = new Date(fecha_desde as string);
+      if (fecha_hasta)  whereClause.created_at.lte = new Date(fecha_hasta as string);
     }
 
-    const pagos = await prisma.pago.findMany({
-      where: whereClause,
-      include: {
-        pedido: {
-          select: {
-            pedido_id: true,
-            numero_pedido: true,
-            nombre_cliente: true,
-            precio_total: true,
-            estado: true,
-            mesa: {
-              select: {
-                numero: true
-              }
-            }
-          }
+    const include = {
+      pedido: {
+        select: {
+          pedido_id: true, numero_pedido: true, nombre_cliente: true,
+          precio_total: true, estado: true,
+          mesa: { select: { numero: true } }
         }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+      }
+    };
 
-    res.status(200).json(pagos);
+    const orderBy = { created_at: 'desc' as const };
+
+    const [pagos, total] = await prisma.$transaction([
+      prisma.pago.findMany({ where: whereClause, include, orderBy, skip, take: limitNum }),
+      prisma.pago.count({ where: whereClause })
+    ]);
+
+    res.status(200).json({
+      data:       pagos,
+      total,
+      page:       pageNum,
+      limit:      limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
   } catch (error) {
     handleHttpError(res, "Error al obtener pagos", 500);
   }
