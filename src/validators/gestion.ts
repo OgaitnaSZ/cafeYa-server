@@ -99,7 +99,11 @@ export const validatorPedidosFiltro = [
 
     query("fecha_desde")
     .optional({ checkFalsy: true })
-    .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
+    .isLength({ max: 30 }).withMessage("El campo debe tener como máximo 30 caracteres"),
+
+    query("fecha_hasta")
+    .optional({ checkFalsy: true })
+    .isLength({ max: 30 }).withMessage("El campo debe tener como máximo 30 caracteres"),
 
     query("search")
     .optional({ checkFalsy: true })
@@ -219,9 +223,13 @@ export const validatorPagosFiltro = [
 
     query("fecha_desde")
     .optional({ checkFalsy: true })
-    .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
+    .isLength({ max: 30 }).withMessage("El campo debe tener como máximo 30 caracteres"),
 
     query("fecha_hasta")
+    .optional({ checkFalsy: true })
+    .isLength({ max: 30 }).withMessage("El campo debe tener como máximo 30 caracteres"),
+
+    query("search")
     .optional({ checkFalsy: true })
     .isLength({ max: 20 }).withMessage("El campo debe tener como máximo 20 caracteres"),
 

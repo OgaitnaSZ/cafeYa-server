@@ -322,7 +322,7 @@ try {
     }
 
     if (fecha_desde || fecha_hasta) {
-      where.fecha_creacion = {
+      where.created_at = {
         ...(fecha_desde && { gte: fecha_desde }),
         ...(fecha_hasta && { lte: fecha_hasta }),
       };
@@ -883,9 +883,7 @@ export async function eliminarCliente(req: Request, res: Response) {
 
     if (!cliente) return handleHttpError(res, "Cliente no encontrado", 404);
 
-    if (cliente._count.pedido > 0) {
-      return handleHttpError(res, `No se puede eliminar. El cliente tiene ${cliente._count.pedido} pedido(s) asociado(s)`,400);
-    }
+    if (cliente._count.pedido > 0) return handleHttpError(res, `No se puede eliminar. El cliente tiene ${cliente._count.pedido} pedido(s) asociado(s)`,400);
 
     await prisma.cliente.delete({ where: { cliente_id: id }});
 
@@ -912,7 +910,7 @@ export async function eliminarCliente(req: Request, res: Response) {
 // Obtener calificaciones
 export async function obtenerCalificaciones(req: Request, res: Response) {
   try {
-    const { pedido_id, fecha_desde, fecha_hasta, search, puntuacion } = req.query;
+    const { pedido_id, search, puntuacion } = req.query;
 
     let whereClause: any = {};
 
@@ -929,16 +927,6 @@ export async function obtenerCalificaciones(req: Request, res: Response) {
         contains: search as string,
         mode: 'insensitive'
       };
-    }
-
-    if (fecha_desde || fecha_hasta) {
-      whereClause.created_at = {};
-      if (fecha_desde) {
-        whereClause.created_at.gte = new Date(fecha_desde as string);
-      }
-      if (fecha_hasta) {
-        whereClause.created_at.lte = new Date(fecha_hasta as string);
-      }
     }
 
     const calificaciones = await prisma.calificacion.findMany({
